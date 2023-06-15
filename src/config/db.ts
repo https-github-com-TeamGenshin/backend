@@ -1,26 +1,20 @@
-import mongoose, { connect } from "mongoose";
+import mongoose from "mongoose";
 require("dotenv").config();
-// Connecting to the Mongo DB
-const connects = async (): Promise<any> => {
-  // Mongo DB String
 
-  const connectionParams = {
-    useNewUrlParser: true,
-    useCreateIndex: true,
-    useUnifiedTopology: true,
-  };
-  await connect(
-    process.env.DB ||
-      "mongodb+srv://teamgenshinofficial:UNbsEdjRAkK3BKNw@cabmanagement.w73ourp.mongodb.net/CabManagement"
-  )
-    .then(() => {
-      // Print Mongo Connected in console if connected
-      console.log("Mongo Connected");
-    })
-    .catch((e: any) => {
-      console.log(e);
-    });
+const connects = async (): Promise<any> => {
+  let DB: string | undefined = process.env.DB;
+  if (DB) {
+    await mongoose
+      .connect(DB)
+      .then(() => {
+        console.log("Mongo Connected");
+      })
+      .catch((e: any) => {
+        console.log(e);
+      });
+  } else {
+    console.log("MongoDB connection string is not defined.");
+  }
 };
 
 export default connects;
-``;
