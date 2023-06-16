@@ -1,5 +1,5 @@
 import { model, Schema, Document, Types } from "mongoose";
-import { location, Location } from "./driver";
+import { Location, locationSchema } from "./driver";
 
 export interface user extends Document {
   username: string;
@@ -7,10 +7,11 @@ export interface user extends Document {
   mobile_no: string;
   gender: string;
   age: string;
-  location: location;
+  location: Location;
+  pending_request: string;
 }
 
-const UserSchema = new Schema<user>({
+const userSchema = new Schema<user>({
   username: {
     type: String,
   },
@@ -27,10 +28,13 @@ const UserSchema = new Schema<user>({
     type: String,
   },
   location: {
-    type: Location,
+    type: locationSchema,
+  },
+  pending_request: {
+    type: String,
   },
 });
 
-const userModel = model<user>("Company", UserSchema);
+const userModel = model<user>("Company", userSchema);
 
 export default userModel;

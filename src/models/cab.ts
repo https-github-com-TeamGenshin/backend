@@ -1,6 +1,6 @@
 import { model, Schema, Document, Types } from "mongoose";
 
-export interface cab extends Document {
+export interface Cab extends Document {
   registration_number: string;
   model_name: string;
   model_no: string;
@@ -9,9 +9,10 @@ export interface cab extends Document {
   kms_run: number;
   initial_rate: number;
   fuel_type: string;
+  available_status: number;
 }
 
-const CabSchema = new Schema<cab>({
+const cabSchema = new Schema<Cab>({
   registration_number: {
     type: String,
   },
@@ -36,8 +37,11 @@ const CabSchema = new Schema<cab>({
   fuel_type: {
     type: String,
   },
+  available_status: {
+    type: Number,
+  },
 });
 
-const CabModel = model<cab>("Cab", CabSchema);
+const cabModel = model<Cab>("Cab", cabSchema);
 
-export default CabModel;
+export default cabModel;

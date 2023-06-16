@@ -1,28 +1,41 @@
 import { model, Schema, Document, Types } from "mongoose";
-import { location, Location } from "./driver";
+import { locationSchema, Location } from "./driver";
 
-export interface requests extends Document {
+interface Requests extends Document {
   user_id: string;
   driver_id: string;
-  location_driver: location;
-  location_user: location;
+  location_user: Location;
+  kms: number;
+  time_required: Date;
+  start_date: Date;
+  createdAt?: Date;
 }
 
-const RequestsSchema = new Schema<requests>({
+const requestsSchema = new Schema<Requests>({
   user_id: {
     type: String,
   },
   driver_id: {
     type: String,
   },
-  location_driver: {
-    type: Location,
-  },
   location_user: {
-    type: Location,
+    type: locationSchema,
+  },
+  kms: {
+    type: Number,
+  },
+  time_required: {
+    type: Date,
+  },
+  start_date: {
+    type: Date,
+  },
+  createdAt: {
+    type: Date,
+    default: Date.now,
   },
 });
 
-const RequestModel = model<requests>("Requests", RequestsSchema);
+const RequestModel = model<Requests>("Requests", requestsSchema);
 
 export default RequestModel;
