@@ -4,31 +4,31 @@ import {
   UpdateQuery,
   QueryOptions,
 } from "mongoose";
-import CabModel, { cab } from "../models/cab";
+import cabModel, { Cab } from "../models/cab";
 
 // Create cab Service
-export const createCompany = (input: DocumentDefinition<cab>) => {
-  return CabModel.create(input);
+export const createCabService = (input: DocumentDefinition<Cab>) => {
+  return cabModel.create(input);
 };
 
 // Find cab Service
-export const findCompany = (
-  query: FilterQuery<cab>,
+export const findCabService = (
+  query: FilterQuery<Cab>,
   options: QueryOptions = { lean: true }
 ) => {
-  return CabModel.find(query, {}, options);
+  return cabModel.find(query, {}, options);
 };
 
 // Find and Update cab Service
-export function findAndUpdate(
-  query: FilterQuery<cab>,
-  update: UpdateQuery<cab>,
+export function findAndUpdateCabService(
+  query: FilterQuery<Cab>,
+  update: UpdateQuery<Cab>,
   options: QueryOptions
 ) {
-  return CabModel.findOneAndUpdate(query, update, options);
+  return cabModel.findOneAndUpdate(query, update, options);
 }
 
 // Delete cab Service
-export const deleteCompany = (query: FilterQuery<cab>) => {
-  return CabModel.deleteOne(query);
+export const deleteCabService = (query: FilterQuery<Cab>) => {
+  return cabModel.deleteOne(query);
 };

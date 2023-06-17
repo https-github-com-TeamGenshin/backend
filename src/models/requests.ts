@@ -1,28 +1,65 @@
 import { model, Schema, Document, Types } from "mongoose";
-import { location, Location } from "./driver";
+import { locationSchema, Location } from "./driver";
 
-export interface requests extends Document {
+// ------------------------------------------------------------------------
+export interface Requests extends Document {
   user_id: string;
   driver_id: string;
-  location_driver: location;
-  location_user: location;
+  cab_id: string;
+  type: string;
+  model_no: string;
+  location_user: Location;
+  kms: number;
+  time_required: Date;
+  start_date: Date;
+  request_status: string;
+  createdAt?: Date;
 }
+// -----------------------------------------------------  Request Interface
 
-const RequestsSchema = new Schema<requests>({
+// ------------------------------------------------------------------------
+const requestsSchema = new Schema<Requests>({
   user_id: {
     type: String,
   },
   driver_id: {
     type: String,
   },
-  location_driver: {
-    type: Location,
+  cab_id: {
+    type: String,
   },
   location_user: {
-    type: Location,
+    type: locationSchema,
+  },
+  kms: {
+    type: Number,
+  },
+  time_required: {
+    type: Date,
+  },
+  request_status: {
+    type: String,
+    default: "Pending",
+  },
+  start_date: {
+    type: Date,
+  },
+  createdAt: {
+    type: Date,
+    default: Date.now,
   },
 });
+// --------------------------------------------------------- Request Schema
 
-const RequestModel = model<requests>("Requests", RequestsSchema);
+// save the document using methods like save() or create() to change the data of createdAt
+// save the document after changing the request_status string to "Accepted"
+requestsSchema.pre<Requests>("save", function (next) {
+  if (this.request_status === "Accepted") {
+    this.createdAt = undefined;
+  }
+  next();
+});
+
+const RequestModel = model<Requests>("Requests", requestsSchema);
 
 export default RequestModel;

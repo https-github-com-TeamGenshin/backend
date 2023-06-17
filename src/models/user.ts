@@ -1,36 +1,53 @@
 import { model, Schema, Document, Types } from "mongoose";
-import { location, Location } from "./driver";
 
-export interface user extends Document {
-  username: string;
+// ------------------------------------------------------------------------
+export interface User extends Document {
+  name: string;
   email_id: string;
   mobile_no: string;
+  password: string;
   gender: string;
   age: string;
-  location: location;
+  location: string;
+  pending_request: string;
 }
+// -------------------------------------------------------- user Interface
 
-const UserSchema = new Schema<user>({
-  username: {
+// ------------------------------------------------------------------------
+const userSchema = new Schema<User>({
+  name: {
     type: String,
+    required: true,
   },
   email_id: {
     type: String,
   },
   mobile_no: {
     type: String,
+    required: true,
+  },
+  password: {
+    type: String,
+    required: true,
   },
   gender: {
     type: String,
+    required: true,
   },
   age: {
     type: String,
+    required: true,
   },
   location: {
-    type: Location,
+    type: String,
+    required: true,
+  },
+  pending_request: {
+    type: String,
   },
 });
+// ------------------------------------------------------------ User Schema
 
-const userModel = model<user>("Company", UserSchema);
+const userModel = model<User>("Company", userSchema);
 
 export default userModel;
