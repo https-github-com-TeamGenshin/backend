@@ -1,25 +1,40 @@
 import { model, Schema, Document, Types } from "mongoose";
 
-export interface Cab extends Document {
-  registration_number: string;
+// ------------------------------------------------------------------------
+export interface CabDetails {
+  registration_number: [string];
   model_name: string;
   model_no: string;
+  imageurl: string;
   colour: string;
   no_of_seats: number;
   kms_run: number;
   initial_rate: number;
   fuel_type: string;
-  available_status: number;
+  no_of_available: number;
 }
+// -------------------------------------------------- CabDetails Interface
 
-const cabSchema = new Schema<Cab>({
+// ------------------------------------------------------------------------
+export interface Cab extends Document {
+  type: string;
+  cabs: CabDetails[];
+}
+// --------------------------------------------------------- Cab Interface
+
+// ------------------------------------------------------------------------
+
+const CabDetailsSchema = new Schema<CabDetails>({
   registration_number: {
-    type: String,
+    type: [String],
   },
   model_name: {
     type: String,
   },
   model_no: {
+    type: String,
+  },
+  imageurl: {
     type: String,
   },
   colour: {
@@ -37,10 +52,23 @@ const cabSchema = new Schema<Cab>({
   fuel_type: {
     type: String,
   },
-  available_status: {
+  no_of_available: {
     type: Number,
   },
 });
+
+// ------------------------------------------------------ CabDetails Schema
+
+// ------------------------------------------------------------------------
+const cabSchema = new Schema<Cab>({
+  type: {
+    type: String,
+  },
+  cabs: {
+    type: [CabDetailsSchema],
+  },
+});
+// ------------------------------------------------------------ Cab Schema
 
 const cabModel = model<Cab>("Cab", cabSchema);
 

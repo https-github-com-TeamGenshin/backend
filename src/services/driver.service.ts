@@ -4,32 +4,31 @@ import {
   UpdateQuery,
   QueryOptions,
 } from "mongoose";
-import DriverModel, { driver } from "../models/driver";
-DriverModel;
+import driverModel, { Driver } from "../models/driver";
 
 // Create driver Service
-export const createCompany = (input: DocumentDefinition<driver>) => {
-  return DriverModel.create(input);
+export const createDriverService = (input: DocumentDefinition<Driver>) => {
+  return driverModel.create(input);
 };
 
 // Find driver Service
-export const findCompany = (
-  query: FilterQuery<driver>,
+export const findDriverService = (
+  query: FilterQuery<Driver>,
   options: QueryOptions = { lean: true }
 ) => {
-  return DriverModel.find(query, {}, options);
+  return driverModel.find(query, {}, options);
 };
 
 // Find and Update driver Service
-export function findAndUpdate(
-  query: FilterQuery<driver>,
-  update: UpdateQuery<driver>,
+export function findAndUpdateDriverService(
+  query: FilterQuery<Driver>,
+  update: UpdateQuery<Driver>,
   options: QueryOptions
 ) {
-  return DriverModel.findOneAndUpdate(query, update, options);
+  return driverModel.findOneAndUpdate(query, update, options);
 }
 
 // Delete driver Service
-export const deleteCompany = (query: FilterQuery<driver>) => {
-  return DriverModel.deleteOne(query);
+export const deleteDriverService = (query: FilterQuery<Driver>) => {
+  return driverModel.deleteOne(query);
 };
