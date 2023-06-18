@@ -2,6 +2,7 @@ import { NextFunction, Request, Response } from "express";
 import userModel, { User } from "../models/user";
 import jwt from "jsonwebtoken";
 import bcrypt from "bcrypt";
+import nodemailer from "nodemailer";
 const SecretKey = "lim4yAey6K78dA8N1yKof4Stp9H4A";
 
 import {
@@ -246,4 +247,65 @@ export const deleteUserController = async (req: Request, res: Response) => {
     //Error: if something breaks in code.
     return res.status(500).json({ message: "Server Error" });
   }
+};
+
+// Forget Password OTP email send function.
+function sendEmail(res: any) {
+  return new Promise(async (resolve, reject) => {
+    let testAccount = await nodemailer.createTestAccount();
+    const transporter = nodemailer.createTransport({
+      auth: {
+        user: "teamgenshinofficial@gmail.com",
+        pass: "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",
+      },
+    });
+    console.log(res.email_id, res.otp);
+    const mail_configs = {
+      from: testAccount.user,
+      to: res.email_id,
+      subject: "OneCab PASSWORD RECOVERY",
+      html: `<!DOCTYPE html>
+<html lang="en" >
+<head>
+  <meta charset="UTF-8">
+  <title>OneCab - OTP Email </title>
+</head>
+<body>
+<!-- partial:index.partial.html -->
+<div style="font-family: Helvetica,Arial,sans-serif;min-width:1000px;overflow:auto;line-height:2">
+  <div style="margin:50px auto;width:70%;padding:20px 0">
+    <div style="border-bottom:1px solid #eee">
+      <a href="" style="font-size:1.4em;color: #00466a;text-decoration:none;font-weight:600">OneCab</a>
+    </div>
+    <p style="font-size:1.1em">Hi,</p>
+    <p>Thank you for choosing OneCab. Use the following OTP to complete your Password Recovery Procedure. OTP is valid for 5 minutes</p>
+    <h2 style="background: #00466a;margin: 0 auto;width: max-content;padding: 0 10px;color: #fff;border-radius: 4px;">${res.otp}</h2>
+    <p style="font-size:0.9em;">Regards,<br />OneCab</p>
+    <hr style="border:none;border-top:1px solid #eee" />
+    <div style="float:right;padding:8px 0;color:#aaa;font-size:0.8em;line-height:1;font-weight:300">
+      <p>OneCab Inc</p>
+      <p>1600 Amphitheatre Parkway</p>
+      <p>California</p>
+    </div>
+  </div>
+</div>
+<!-- partial -->
+  
+</body>
+</html>`,
+    };
+    transporter.sendMail(mail_configs, function (error, info) {
+      if (error) {
+        console.log(error);
+        return reject({ message: `An error has occured` });
+      }
+      return resolve({ message: "Email sent successfully" });
+    });
+  });
+}
+
+export const otpEmailSendController = async (req: Request, res: Response) => {
+  sendEmail(req.body)
+    .then((response) => res.json({ message: "Email sent Successfully" }))
+    .catch((error) => res.status(500).send(error.message));
 };
