@@ -41,10 +41,7 @@ export const loginUserController = async (req: Request, res: Response) => {
         bcrypt.compare(password, hashedPassword).then((results) => {
           if (results) {
             // creating the token
-            const token = jwt.sign(
-              { user: user._id, username: username },
-              SecretKey
-            );
+            const token = jwt.sign({ user: user._id }, SecretKey);
             if (token) {
               //Success: if data is found and all operations are done.
               return res.status(200).send({
@@ -78,7 +75,7 @@ export const verifyToken = (
   res: Response,
   next: NextFunction
 ) => {
-  const bearerHeader = req.headers["authentication"];
+  const bearerHeader = req.headers.authorization;
   if (bearerHeader !== undefined) {
     const bearer: string = bearerHeader as string;
     const token = bearer.split(" ")[1];
@@ -190,20 +187,34 @@ export const createUserController = async (req: Request, res: Response) => {
 // Find user by id in params...
 export const findOneUserController = async (req: Request, res: Response) => {
   try {
-    // finding the user by id got from the frontend.
-    const filter = { _id: req.params.id };
-    let data = await findUserService(filter);
+    // access the header
+    const bearerHeader = req.headers.authorization;
+    if (bearerHeader !== undefined) {
+      const bearer: string = bearerHeader as string;
+      const tokenVerify = jwt.verify(bearer.split(" ")[1], SecretKey);
+      if (tokenVerify) {
+        // finding the user by id got from the frontend.
+        const filter = { _id: req.params.id };
+        let data = await findUserService(filter);
 
-    // checking if the user exists or not.
-    if (data.length === 0) {
-      return res.status(404).json({ message: "User not found" });
+        // checking if the user exists or not.
+        if (data.length === 0) {
+          return res.status(404).json({ message: "User not found" });
+        } else {
+          const user = data[0];
+          //Success: Return the all user details.
+          return res.status(200).json({
+            message: "This is User findone Page",
+            data: user,
+          });
+        }
+      } else {
+        //Error: Token not valid.
+        return res.status(404).json({ message: "Token not valid" });
+      }
     } else {
-      const user = data[0];
-      //Success: Return the all user details.
-      return res.status(200).json({
-        message: "This is User findone Page",
-        data: user,
-      });
+      //Error: if Header not found.
+      return res.status(404).json({ message: "Token not found" });
     }
   } catch (e) {
     //Error: if something breaks in code.
@@ -214,11 +225,27 @@ export const findOneUserController = async (req: Request, res: Response) => {
 // Get all users in the database.
 export const getAllUsersController = async (req: Request, res: Response) => {
   try {
-    let users = await userModel.find();
-    return res.json({
-      message: "This is User getAll page",
-      data: users,
-    });
+    // access the header
+    const bearerHeader = req.headers.authorization;
+    if (bearerHeader !== undefined) {
+      const bearer: string = bearerHeader as string;
+      const tokenVerify = jwt.verify(bearer.split(" ")[1], SecretKey);
+      if (tokenVerify) {
+        // find all the users
+        let users = await userModel.find();
+        // return
+        return res.json({
+          message: "This is User getAll page",
+          data: users,
+        });
+      } else {
+        //Error: Token not valid.
+        return res.status(404).json({ message: "Token not valid" });
+      }
+    } else {
+      //Error: if Header not found.
+      return res.status(404).json({ message: "Token not found" });
+    }
   } catch (e) {
     //Error: if something breaks in code.
     return res.status(500).json({ message: "Server Error" });
@@ -228,17 +255,31 @@ export const getAllUsersController = async (req: Request, res: Response) => {
 // delete user in the database by id.
 export const deleteUserController = async (req: Request, res: Response) => {
   try {
-    // deleting the user by filter.
-    const filter = { _id: req.params.id };
-    let data = await deleteUserService(filter);
+    // access the header
+    const bearerHeader = req.headers.authorization;
+    if (bearerHeader !== undefined) {
+      const bearer: string = bearerHeader as string;
+      const tokenVerify = jwt.verify(bearer.split(" ")[1], SecretKey);
+      if (tokenVerify) {
+        // deleting the user by filter.
+        const filter = { _id: req.params.id };
+        let data = await deleteUserService(filter);
 
-    // handling if user not deleted.
-    if (data !== null) {
-      //Success: User is deleted successfully.
-      return res.status(200).json({
-        message: "This is User Delete Page",
-        data: data,
-      });
+        // handling if user not deleted.
+        if (data !== null) {
+          //Success: User is deleted successfully.
+          return res.status(200).json({
+            message: "This is User Delete Page",
+            data: data,
+          });
+        } else {
+          //Error: Token not valid.
+          return res.status(404).json({ message: "Token not valid" });
+        }
+      } else {
+        //Error: if Header not found.
+        return res.status(404).json({ message: "Token not found" });
+      }
     } else {
       //Error: User provided not found in database.
       return res.status(400).json({ message: "Cannot find User" });
@@ -250,21 +291,24 @@ export const deleteUserController = async (req: Request, res: Response) => {
 };
 
 // Forget Password OTP email send function.
-function sendEmail(res: any) {
-  return new Promise(async (resolve, reject) => {
-    let testAccount = await nodemailer.createTestAccount();
-    const transporter = nodemailer.createTransport({
+
+function sendEmail(req: Request, OTP: number, name: string, type: string) {
+  return new Promise((resolve, reject) => {
+    var transporter = nodemailer.createTransport({
+      service: "gmail",
       auth: {
         user: "teamgenshinofficial@gmail.com",
-        pass: "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",
+        pass: "wkrivbrwloojnpzb",
       },
     });
-    console.log(res.email_id, res.otp);
-    const mail_configs = {
-      from: testAccount.user,
-      to: res.email_id,
-      subject: "OneCab PASSWORD RECOVERY",
-      html: `<!DOCTYPE html>
+
+    let mail_configs: any;
+    if (type === "forgetPassword") {
+      mail_configs = {
+        from: "teamgenshinofficial@gmail.com",
+        to: req.body.email_id,
+        subject: "OneCab Password Recovery",
+        html: `<!DOCTYPE html>
 <html lang="en" >
 <head>
   <meta charset="UTF-8">
@@ -277,15 +321,15 @@ function sendEmail(res: any) {
     <div style="border-bottom:1px solid #eee">
       <a href="" style="font-size:1.4em;color: #00466a;text-decoration:none;font-weight:600">OneCab</a>
     </div>
-    <p style="font-size:1.1em">Hi,</p>
+    <p style="font-size:1.1em">Hi ${name},</p>
     <p>Thank you for choosing OneCab. Use the following OTP to complete your Password Recovery Procedure. OTP is valid for 5 minutes</p>
-    <h2 style="background: #00466a;margin: 0 auto;width: max-content;padding: 0 10px;color: #fff;border-radius: 4px;">${res.otp}</h2>
+    <h2 style="background: #00466a;margin: 0 auto;width: max-content;padding: 0 10px;color: #fff;border-radius: 4px;">${OTP}</h2>
     <p style="font-size:0.9em;">Regards,<br />OneCab</p>
     <hr style="border:none;border-top:1px solid #eee" />
     <div style="float:right;padding:8px 0;color:#aaa;font-size:0.8em;line-height:1;font-weight:300">
       <p>OneCab Inc</p>
-      <p>1600 Amphitheatre Parkway</p>
-      <p>California</p>
+      <p>Pimpri Chinchwad</p>
+      <p>Pune</p>
     </div>
   </div>
 </div>
@@ -293,19 +337,151 @@ function sendEmail(res: any) {
   
 </body>
 </html>`,
-    };
+      };
+    }
+
+    if (type === "validateEmail") {
+      mail_configs = {
+        from: "teamgenshinofficial@gmail.com",
+        to: req.body.email_id,
+        subject: "OneCab Email Validation",
+        html: `<!DOCTYPE html>
+<html lang="en" >
+<head>
+  <meta charset="UTF-8">
+  <title>OneCab - Validation OTP </title>
+</head>
+<body>
+<!-- partial:index.partial.html -->
+<div style="font-family: Helvetica,Arial,sans-serif;min-width:1000px;overflow:auto;line-height:2">
+  <div style="margin:50px auto;width:70%;padding:20px 0">
+    <div style="border-bottom:1px solid #eee">
+      <a href="" style="font-size:1.4em;color: #00466a;text-decoration:none;font-weight:600">OneCab</a>
+    </div>
+    <p style="font-size:1.1em">Hello,</p>
+    <p>Thank you for choosing OneCab. Use the following OTP to complete your Password Validity Procedure. OTP is valid for 5 minutes</p>
+    <h2 style="background: #00466a;margin: 0 auto;width: max-content;padding: 0 10px;color: #fff;border-radius: 4px;">${OTP}</h2>
+    <p style="font-size:0.9em;">Regards,<br />OneCab</p>
+    <hr style="border:none;border-top:1px solid #eee" />
+    <div style="float:right;padding:8px 0;color:#aaa;font-size:0.8em;line-height:1;font-weight:300">
+      <p>OneCab Inc</p>
+      <p>Pimpri Chinchwad</p>
+      <p>Pune</p>
+    </div>
+  </div>
+</div>
+<!-- partial -->
+  
+</body>
+</html>`,
+      };
+    }
+
     transporter.sendMail(mail_configs, function (error, info) {
       if (error) {
         console.log(error);
-        return reject({ message: `An error has occured` });
+        return reject({ message: `An error has occured`, error: error });
       }
-      return resolve({ message: "Email sent successfully" });
+      return resolve({ message: "Email sent succesfuly" });
     });
   });
 }
 
 export const otpEmailSendController = async (req: Request, res: Response) => {
-  sendEmail(req.body)
-    .then((response) => res.json({ message: "Email sent Successfully" }))
-    .catch((error) => res.status(500).send(error.message));
+  try {
+    const findUser = await userModel.find({ email_id: req.body.email_id });
+
+    const OTP = Math.floor(Math.random() * 9000 + 1000);
+    if (findUser.length !== 0) {
+      const token = jwt.sign(
+        { otp: OTP, email_id: req.body.email_id },
+        req.body.email_id
+      );
+      sendEmail(req, OTP, findUser[0].name, "forgetPassword")
+        .then((response) => {
+          res.status(200).json({ message: response, token: token });
+        })
+        .catch((error) => res.status(500).json({ error: error.message }));
+    } else {
+      return res.status(404).json({ message: "User not Found" });
+    }
+  } catch (e) {
+    return res.status(500).json({ message: "Internal Server Error", error: e });
+  }
+};
+
+export const forgetPasswordController = async (req: Request, res: Response) => {
+  try {
+    // access the header
+    const bearerHeader = req.headers.authorization;
+    const { email_id, password } = req.body;
+    if (bearerHeader !== undefined) {
+      const bearer: string = bearerHeader as string;
+      // verify the token got from frontend
+      const tokenVerify = jwt.verify(
+        bearer.split(" ")[1],
+        SecretKey
+      ) as jwt.JwtPayload;
+      if (password && email_id && tokenVerify.email_id === email_id) {
+        // find the user in database
+        const findUser = await userModel.find({ email_id: email_id });
+        if (findUser.length !== 0) {
+          // Password Hashing using bcrypt.
+          const saltRounds = 10;
+          bcrypt.hash(password, saltRounds).then(async (hashedPassword) => {
+            findUser[0].password = hashedPassword;
+            const passwordSet = await findUser[0].save();
+            if (passwordSet) {
+              //Success: if password is set successfully
+              return res
+                .status(200)
+                .json({ message: "Password updated successfully" });
+            } else {
+              //Error: If password cannot be set
+              return res
+                .status(500)
+                .json({ message: "Cannot set the password in database" });
+            }
+          });
+        } else {
+          //Error: user not found
+          return res.status(404).json({ message: "User not Found" });
+        }
+      } else {
+        //Error: Token not valid.
+        return res.status(404).json({ message: "password not found" });
+      }
+    } else {
+      //Error: if Header not found.
+      return res.status(404).json({ message: "Token not found" });
+    }
+  } catch (e) {
+    //Error: if anything breaks
+    return res
+      .status(500)
+      .json({ message: "Some error in setting new password" });
+  }
+};
+
+export const validateEmailController = async (req: Request, res: Response) => {
+  try {
+    const findUser = await userModel.find({ email_id: req.body.email_id });
+
+    const OTP = Math.floor(Math.random() * 9000 + 1000);
+    if (findUser.length !== 0) {
+      const token = jwt.sign({ otp: OTP }, req.body.email_id);
+      sendEmail(req, OTP, findUser[0].name, "validateEmail")
+        .then((response) => {
+          res.status(200).json({ message: response, token: token });
+        })
+        .catch((error) => res.status(500).json({ error: error.message }));
+    } else {
+      return res.status(404).json({ message: "User not Found" });
+    }
+  } catch (e) {
+    //Error: if anything breaks
+    return res
+      .status(500)
+      .json({ message: "Error while validating the email" });
+  }
 };
