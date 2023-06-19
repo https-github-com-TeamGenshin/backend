@@ -10,12 +10,14 @@ import {
   findOneUserController,
   getAllUsersController,
   deleteUserController,
+  otpEmailSendController,
 } from "../controller/user";
 
 router.use(BodyParser.json());
 router.use(BodyParser.urlencoded({ extended: true }));
 
 // All the data will be send in JSON format
+// pass headers in every request
 
 // Login user Route ----------------
 // pass (body) mobile no. or email in (username) and password in (password)
@@ -53,4 +55,9 @@ router.get("/getAllUsers", getAllUsersController);
 
 router.delete("/deleteUser/:id", deleteUserController);
 
+// forget password user
+// pass (body) email_id: email(string), otp: number(4 digit)
+// get data:
+
+router.post("/otpEmail", otpEmailSendController);
 export default router;
