@@ -10,12 +10,16 @@ import {
   findOneUserController,
   getAllUsersController,
   deleteUserController,
+  otpEmailSendController,
+  forgetPasswordController,
+  validateEmailController,
 } from "../controller/user";
 
 router.use(BodyParser.json());
 router.use(BodyParser.urlencoded({ extended: true }));
 
-// All the data will be send in JSON format
+// All the data will be send in JSON format.
+// pass headers in every request other than login and register.
 
 // Login user Route ----------------
 // pass (body) mobile no. or email in (username) and password in (password)
@@ -41,16 +45,34 @@ router.post("/createUser", createUserController);
 
 router.get("/getOneUser/:id", findOneUserController);
 
-// get all users Route
+// get all users Route---------------
 // pass nothing
 // get data: [All users with all details]
 
 router.get("/getAllUsers", getAllUsersController);
 
-// delete user
+// delete user-----------------------
 // pass (params) replace :id with the id
 // get data: deletedCount should be equals 1
 
 router.delete("/deleteUser/:id", deleteUserController);
+
+// otp request-----------------------
+// pass (body) email_id: email(string)
+// get data: token (email id that was passed)
+
+router.post("/otpEmail", otpEmailSendController);
+
+// forget password-------------------
+// pass (headers) token and (body) new password and email_id
+// get data: message of successful
+
+router.post("/forgetPassword", forgetPasswordController);
+
+// email verification ----------------
+// pass (body) email_id: string.
+// get data: token and message of successful.
+
+router.post("/validateEmail", validateEmailController);
 
 export default router;
