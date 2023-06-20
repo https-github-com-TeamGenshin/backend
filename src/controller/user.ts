@@ -14,6 +14,7 @@ import {
 // login user by username (email or mobile_no) and password.
 export const loginUserController = async (req: Request, res: Response) => {
   try {
+    console.log(req.body)
     if (!req.body.username) {
       return res.status(400).json({ message: "Email or Mobile no. not found" });
     } else if (!req.body.password) {
@@ -29,9 +30,10 @@ export const loginUserController = async (req: Request, res: Response) => {
       const user = await userModel.findOne({
         $or: [{ email_id }, { mobile_no }],
       });
-
+      console.log(user)
       // if user not found.
       if (user === null) {
+        console.log("Not Found")
         //Error: if user not found in database.
         return res.status(404).json({ message: "User does not exist" });
       } else {
@@ -77,7 +79,9 @@ export const verifyToken = (
   res: Response,
   next: NextFunction
 ) => {
-  const bearerHeader = req.headers["authentication"];
+  console.log(req.headers)
+  const bearerHeader = req.headers.authorization;
+  console.log(bearerHeader)
   if (bearerHeader !== undefined) {
     const bearer: string = bearerHeader as string;
     const token = bearer.split(" ")[1];
