@@ -15,7 +15,7 @@ import {
 // login user by username (email or mobile_no) and password.
 export const loginUserController = async (req: Request, res: Response) => {
   try {
-    console.log(req.body)
+    console.log(req.body);
     if (!req.body.username) {
       return res.status(400).json({ message: "Email or Mobile no. not found" });
     } else if (!req.body.password) {
@@ -31,10 +31,10 @@ export const loginUserController = async (req: Request, res: Response) => {
       const user = await userModel.findOne({
         $or: [{ email_id }, { mobile_no }],
       });
-      console.log(user)
+      console.log(user);
       // if user not found.
       if (user === null) {
-        console.log("Not Found")
+        console.log("Not Found");
         //Error: if user not found in database.
         return res.status(404).json({ message: "User does not exist" });
       } else {
@@ -467,19 +467,13 @@ export const forgetPasswordController = async (req: Request, res: Response) => {
 
 export const validateEmailController = async (req: Request, res: Response) => {
   try {
-    const findUser = await userModel.find({ email_id: req.body.email_id });
-
     const OTP = Math.floor(Math.random() * 9000 + 1000);
-    if (findUser.length !== 0) {
-      const token = jwt.sign({ otp: OTP }, req.body.email_id);
-      sendEmail(req, OTP, findUser[0].name, "validateEmail")
-        .then((response) => {
-          res.status(200).json({ message: response, token: token });
-        })
-        .catch((error) => res.status(500).json({ error: error.message }));
-    } else {
-      return res.status(404).json({ message: "User not Found" });
-    }
+    const token = jwt.sign({ otp: OTP }, req.body.email_id);
+    sendEmail(req, OTP, "User", "validateEmail")
+      .then((response) => {
+        res.status(200).json({ message: response, token: token });
+      })
+      .catch((error) => res.status(500).json({ error: error.message }));
   } catch (e) {
     //Error: if anything breaks
     return res
