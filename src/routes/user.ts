@@ -1,7 +1,6 @@
 import express, { NextFunction, Request, Response, Router } from "express";
 const router: Router = Router();
 
-import BodyParser from "body-parser";
 import {
   loginUserController,
   verifyToken,
@@ -10,13 +9,7 @@ import {
   findOneUserController,
   getAllUsersController,
   deleteUserController,
-  otpEmailSendController,
-  forgetPasswordController,
-  validateEmailController,
 } from "../controller/user";
-
-router.use(BodyParser.json());
-router.use(BodyParser.urlencoded({ extended: true }));
 
 // All the data will be send in JSON format.
 // pass headers in every request other than login and register.
@@ -55,24 +48,6 @@ router.get("/getAllUsers", getAllUsersController);
 // pass (params) replace :id with the id
 // get data: deletedCount should be equals 1
 
-router.delete("/deleteUser/:id", deleteUserController);
-
-// otp request-----------------------
-// pass (body) email_id: email(string)
-// get data: token (email id that was passed)
-
-router.post("/otpEmail", otpEmailSendController);
-
-// forget password-------------------
-// pass (headers) token and (body) new password and email_id
-// get data: message of successful
-
-router.post("/forgetPassword", forgetPasswordController);
-
-// email verification ----------------
-// pass (body) email_id: string.
-// get data: token and message of successful.
-
-router.post("/validateEmail", validateEmailController);
+router.delete("/deleteUser", deleteUserController);
 
 export default router;

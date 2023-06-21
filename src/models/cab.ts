@@ -8,8 +8,8 @@ export interface CabDetails {
   imageurl: string;
   colour: string;
   no_of_seats: number;
-  kms_run: number;
-  initial_rate: number;
+  hrs_rate: number;
+  kms_rate: number;
   fuel_type: string;
   no_of_available: number;
 }
@@ -43,10 +43,10 @@ const CabDetailsSchema = new Schema<CabDetails>({
   no_of_seats: {
     type: Number,
   },
-  kms_run: {
+  hrs_rate: {
     type: Number,
   },
-  initial_rate: {
+  kms_rate: {
     type: Number,
   },
   fuel_type: {

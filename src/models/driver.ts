@@ -10,6 +10,7 @@ export interface Location {
 // ------------------------------------------------------------------------
 export interface Driver extends Document {
   username: string;
+  password: string;
   email_id: string;
   mobile_no: string;
   gender: string;
@@ -20,6 +21,7 @@ export interface Driver extends Document {
   availability: boolean;
   vehicle_preferred: [string];
   rate_per_km: number;
+  rate_per_hrs: number;
   acceptedRequests: [string];
   pendingRequests: [string];
 }
@@ -39,6 +41,9 @@ export const locationSchema = new Schema<Location>({
 // ------------------------------------------------------------------------
 const driverSchema = new Schema<Driver>({
   username: {
+    type: String,
+  },
+  password: {
     type: String,
   },
   email_id: {
@@ -69,6 +74,9 @@ const driverSchema = new Schema<Driver>({
     type: [String],
   },
   rate_per_km: {
+    type: Number,
+  },
+  rate_per_hrs: {
     type: Number,
   },
 });
