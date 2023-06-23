@@ -7,6 +7,7 @@ export interface CabDetails {
   model_no: string;
   imageurl: string;
   colour: string;
+  location: string;
   no_of_seats: number;
   hrs_rate: number;
   kms_rate: number;
@@ -38,6 +39,9 @@ const CabDetailsSchema = new Schema<CabDetails>({
     type: String,
   },
   colour: {
+    type: String,
+  },
+  location: {
     type: String,
   },
   no_of_seats: {

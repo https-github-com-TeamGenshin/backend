@@ -1,14 +1,9 @@
-import { NextFunction, Request, Response } from "express";
-import driverModel, { Driver } from "../models/driver";
+import { Request, Response } from "express";
 import jwt from "jsonwebtoken";
 import bcrypt from "bcrypt";
-import nodemailer from "nodemailer";
-import {
-  deleteDriverService,
-  findDriverService,
-} from "../services/driver.service";
 const SecretKey = "lim4yAey6K78dA8N1yKof4Stp9H4A";
 
+import driverModel, { Driver } from "../models/driver";
 import userModel from "../models/user";
 
 // login driver by username (email or mobile_no) and password.
@@ -40,7 +35,20 @@ export const loginDriverController = async (req: Request, res: Response) => {
         bcrypt.compare(password, hashedPassword).then((results) => {
           if (results) {
             // creating the token
-            const token = jwt.sign({ driver: driver._id }, SecretKey);
+            const token = jwt.sign(
+              {
+                id: driver._id,
+                username: driver.username,
+                email_id: driver.email_id,
+                mobile_no: driver.mobile_no,
+                rating: driver.rating,
+                experience_years: driver.experience_years,
+                location: driver.location,
+                rate_per_km: driver.rate_per_km,
+                rate_per_hrs: driver.rate_per_hrs,
+              },
+              SecretKey
+            );
             if (token) {
               //Success: if data is found and all operations are done.
               return res.status(200).send({
@@ -68,43 +76,27 @@ export const loginDriverController = async (req: Request, res: Response) => {
   }
 };
 
-// verify Token function.
-export const verifyToken = (
-  req: Request,
-  res: Response,
-  next: NextFunction
-) => {
-  const bearerHeader = req.headers.authorization;
-  if (bearerHeader !== undefined) {
-    const bearer: string = bearerHeader as string;
-    const token = bearer.split(" ")[1];
-    if (!token) {
-      // Error: unable to fetch Token
-      return res.status(400).json({ message: "Unable to fetch token" });
-    } else {
-      // Success pass token in body.
-      req.body.token = token;
-      next();
-    }
-  } else {
-    // Error: Invalid Token
-    return res.status(400).json({ message: "Invalid Token" });
-  }
-};
-
 // Verify Driver by token got from frontend.
 export const verifyDriverByToken = async (req: Request, res: Response) => {
   try {
-    const tokenVerify = jwt.verify(req.body.token, SecretKey);
-    if (tokenVerify) {
-      // Success : Token id
-      return res.status(200).send({
-        message: "Login by token Successful",
-        data: tokenVerify,
-      });
+    // access the header
+    const bearerHeader = req.headers.authorization;
+    if (bearerHeader !== undefined) {
+      const bearer: string = bearerHeader as string;
+      const tokenVerify = jwt.verify(bearer.split(" ")[1], SecretKey);
+      if (tokenVerify) {
+        // Success : Token id
+        return res.status(200).send({
+          message: "Login by token Successful",
+          data: tokenVerify,
+        });
+      } else {
+        // Error : Invalid Token
+        res.status(400).json({ message: "Cannot verify token" });
+      }
     } else {
-      // Error : Invalid Token
-      res.status(400).json({ message: "Cannot verify token" });
+      // Error : Token not found
+      res.status(400).json({ message: "Token not found" });
     }
   } catch (e) {
     // Error : verifying the token
@@ -217,17 +209,19 @@ export const findOneDriverController = async (req: Request, res: Response) => {
     const bearerHeader = req.headers.authorization;
     if (bearerHeader !== undefined) {
       const bearer: string = bearerHeader as string;
-      const tokenVerify = jwt.verify(bearer.split(" ")[1], SecretKey);
+      const tokenVerify = jwt.verify(
+        bearer.split(" ")[1],
+        SecretKey
+      ) as jwt.JwtPayload;
       if (tokenVerify) {
         // finding the driver by id got from the frontend.
-        const filter = { _id: req.params.id };
-        let data = await findDriverService(filter);
+        let data = await driverModel.findById({ _id: tokenVerify.id });
 
         // checking if the driver exists or not.
-        if (data.length === 0) {
+        if (!data) {
           return res.status(404).json({ message: "driver not found" });
         } else {
-          const driver = data[0];
+          const driver = data;
           //Success: Return the all driver details.
           return res.status(200).json({
             message: "finding one driver is successful",
@@ -278,6 +272,47 @@ export const getAllDriversController = async (req: Request, res: Response) => {
   }
 };
 
+// Get all drivers with respect to type in the database.
+export const getDriversbyTypeController = async (
+  req: Request,
+  res: Response
+) => {
+  try {
+    // access the header
+    const bearerHeader = req.headers.authorization;
+    if (bearerHeader !== undefined) {
+      const bearer: string = bearerHeader as string;
+      const tokenVerify = jwt.verify(bearer.split(" ")[1], SecretKey);
+      if (tokenVerify) {
+        const { type } = req.body;
+        if (!type) {
+          // Error: type not found.
+          return res.status(404).json({ message: "Imcompelete Data" });
+        } else {
+          // find all the drivers
+          const drivers = await driverModel.find({
+            vehicle_preferred: { $in: [type] },
+          });
+          // Success : send all drivers
+          return res.json({
+            message: "Finding all drivers are successful!",
+            data: drivers,
+          });
+        }
+      } else {
+        //Error: Token not valid.
+        return res.status(404).json({ message: "Token not valid" });
+      }
+    } else {
+      //Error: if Header not found.
+      return res.status(404).json({ message: "Token not found" });
+    }
+  } catch (e) {
+    //Error: if something breaks in code.
+    return res.status(500).json({ message: "Server Error" });
+  }
+};
+
 // delete Driver in the database by id.
 export const deleteDriverController = async (req: Request, res: Response) => {
   try {
@@ -291,7 +326,9 @@ export const deleteDriverController = async (req: Request, res: Response) => {
       ) as jwt.JwtPayload;
       if (tokenVerify) {
         // deleting the Driver by filter.
-        let data = await deleteDriverService({ _id: tokenVerify.driver });
+        let data = await driverModel.findByIdAndDelete({
+          _id: tokenVerify.driver,
+        });
 
         // handling if Driver not deleted.
         if (data !== null) {
