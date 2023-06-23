@@ -1,15 +1,8 @@
 import { NextFunction, Request, Response } from "express";
 import jwt from "jsonwebtoken";
-import bcrypt from "bcrypt";
-import nodemailer from "nodemailer";
 const SecretKey = "lim4yAey6K78dA8N1yKof4Stp9H4A";
 
-import cabModel, { Cab } from "../models/cab";
-import {
-  createCabService,
-  deleteCabService,
-  findCabService,
-} from "../services/cab.service";
+import cabModel, { Cab, CabDetails } from "../models/cab";
 
 // Create the Cab Controller
 export const createCab = async (req: Request, res: Response) => {
@@ -21,8 +14,8 @@ export const createCab = async (req: Request, res: Response) => {
       colour,
       imageurl,
       no_of_seats,
-      kms_run,
       kms_rate,
+      location,
       fuel_type,
       hrs_rate,
       type,
@@ -30,12 +23,12 @@ export const createCab = async (req: Request, res: Response) => {
     } = req.body;
     if (
       !registration_number ||
+      !location ||
       !model_name ||
       !model_no ||
       !colour ||
       !imageurl ||
       !no_of_seats ||
-      !kms_run ||
       !kms_rate ||
       !hrs_rate ||
       !fuel_type ||
@@ -76,16 +69,15 @@ export const createCab = async (req: Request, res: Response) => {
             imageurl: imageurl,
             model_name: model_name,
             model_no: modelNo,
+            location: location,
             colour: colour,
             no_of_seats: no_of_seats,
-            kms_run: kms_run,
             hrs_rate: hrs_rate,
             kms_rate: kms_rate,
             fuel_type: fuel_type,
             no_of_available: no_of_available,
           };
           findType[0].cabs.push(newCabDetails);
-          console.log(findType[0]);
           // save
           const savedCab = await findType[0].save();
           // Success: save the cab.
@@ -95,7 +87,7 @@ export const createCab = async (req: Request, res: Response) => {
           });
         } else {
           // Creating the new type and data of cab in database
-          const savedCab = await createCabService({
+          const savedCab = await cabModel.create({
             type: type,
             cabs: [
               {
@@ -104,6 +96,7 @@ export const createCab = async (req: Request, res: Response) => {
                 model_name: model_name,
                 model_no: modelNo,
                 colour: colour,
+                location: location,
                 no_of_seats: no_of_seats,
                 hrs_rate: hrs_rate,
                 kms_rate: kms_rate,
@@ -129,29 +122,183 @@ export const createCab = async (req: Request, res: Response) => {
 
 export const getAllCabsController = async (req: Request, res: Response) => {
   try {
-    // access the header
+    // Access the header
     const bearerHeader = req.headers.authorization;
     if (bearerHeader !== undefined) {
       const bearer: string = bearerHeader as string;
       const tokenVerify = jwt.verify(bearer.split(" ")[1], SecretKey);
       if (tokenVerify) {
-        // find all the cabs
-        let cabs = await cabModel.find();
-        // Success : send all cabs
-        return res.json({
-          message: "Finding all cabs are successful!",
-          data: cabs,
-        });
+        let {
+          type,
+          location,
+          model_name,
+          colour,
+          fuel_type,
+          hrs_rate,
+          kms_rate,
+        }: {
+          type: string;
+          location: string;
+          model_name: string;
+          colour: string;
+          fuel_type: string;
+          hrs_rate: boolean;
+          kms_rate: boolean;
+        } = req.body;
+
+        let data: Cab | null = null;
+
+        if (type.length !== 0) {
+          // Find data based on the type
+          data = await cabModel.findOne({ type: type });
+        }
+
+        if (
+          type.length !== 0 &&
+          location.length !== 0 &&
+          colour.length === 0 &&
+          fuel_type.length === 0
+        ) {
+          // Find data based on the type and location
+          console.log("I am Here");
+          let filteredCabs =
+            data?.cabs.filter((cabDetail) => cabDetail.location === location) ??
+            [];
+
+          data = {
+            ...data?.toObject(),
+            cabs: filteredCabs,
+          } as Cab;
+        }
+
+        if (
+          type.length !== 0 &&
+          location.length !== 0 &&
+          colour.length !== 0 &&
+          fuel_type.length === 0
+        ) {
+          // Find data based on the type,location and location
+          let filteredCabs = data?.cabs;
+
+          if (type && location && colour) {
+            filteredCabs = filteredCabs?.filter(
+              (cabDetail) =>
+                cabDetail.location === location && cabDetail.colour === colour
+            );
+          }
+
+          data = {
+            ...data,
+            cabs: filteredCabs ?? [],
+          } as Cab;
+        }
+
+        if (
+          type.length !== 0 &&
+          location.length !== 0 &&
+          fuel_type.length !== 0 &&
+          colour.length === 0
+        ) {
+          let filteredCabs = data?.cabs;
+
+          if (type && location && fuel_type) {
+            filteredCabs = filteredCabs?.filter(
+              (cabDetail) =>
+                cabDetail.location === location &&
+                cabDetail.fuel_type === fuel_type
+            );
+          }
+
+          data = {
+            ...data,
+            cabs: filteredCabs ?? [],
+          } as Cab;
+        }
+
+        if (
+          type.length !== 0 &&
+          location.length !== 0 &&
+          fuel_type.length !== 0 &&
+          colour.length !== 0
+        ) {
+          let filteredCabs = data?.cabs;
+
+          if (type && location && fuel_type) {
+            filteredCabs = filteredCabs?.filter(
+              (cabDetail) =>
+                cabDetail.location === location &&
+                cabDetail.fuel_type === fuel_type &&
+                cabDetail.colour === colour
+            );
+          }
+
+          data = {
+            ...data,
+            cabs: filteredCabs ?? [],
+          } as Cab;
+        }
+
+        // model name
+        if (model_name.length !== 0 && data) {
+          const regex = new RegExp(`^${model_name.trim()}`, "i");
+          data.cabs = data.cabs.filter((cabDetail) => {
+            return regex.test(cabDetail.model_name.trim());
+          });
+        }
+
+        if (data && hrs_rate && !kms_rate) {
+          // Sort the cabs by hrs_rate and kms_rate
+          data.cabs = data.cabs.sort((a: CabDetails, b: CabDetails) => {
+            return a.hrs_rate - b.hrs_rate;
+          });
+        } else if (data && kms_rate && !hrs_rate) {
+          data.cabs = data.cabs.sort((a: CabDetails, b: CabDetails) => {
+            return a.kms_rate - b.kms_rate;
+          });
+        } else if (data && kms_rate && hrs_rate) {
+          data.cabs = data.cabs.sort((a: CabDetails, b: CabDetails) => {
+            return a.hrs_rate + a.kms_rate - (b.hrs_rate + b.kms_rate);
+          });
+        }
+
+        // Checking if the user exists or not.
+        if (!data || data.cabs.length === 0) {
+          return res.status(404).json({ message: "Data not found" });
+        } else {
+          // Define the chunk size
+          const chunkSize = 2; // Number of items in each chunk
+
+          // Calculate the total number of chunks
+          const totalChunks = Math.ceil(data.cabs.length / chunkSize);
+
+          // Get the requested chunk number from the query parameter
+          const requestedChunk = parseInt(req.query.chunk as string) || 1;
+
+          // Calculate the start and end indices of the chunk
+          const startIndex = (requestedChunk - 1) * chunkSize;
+          const endIndex = requestedChunk * chunkSize;
+
+          // Slice the data array to get the desired chunk
+          const chunkData = data.cabs.slice(startIndex, endIndex);
+
+          // Send the chunk data as a response
+          return res.status(200).json({
+            message: "Finding cabs is successful",
+            totalChunks: totalChunks,
+            chunkData: chunkData,
+            data: data,
+          });
+        }
       } else {
-        //Error: Token not valid.
-        return res.status(404).json({ message: "Token not valid" });
+        // Error: Invalid User or Driver
+        return res.status(400).json({ message: "Invalid User or Driver" });
       }
     } else {
-      //Error: if Header not found.
-      return res.status(404).json({ message: "Token not found" });
+      // Error: Error in finding the token
+      return res.status(400).json({ message: "Error in token" });
     }
   } catch (e) {
-    //Error: if something breaks in code.
+    // Error: Something breaks in the code.
     return res.status(500).json({ message: "Server Error" });
   }
 };
@@ -172,7 +319,7 @@ export const deleteTypeOfCabsController = async (
       ) as jwt.JwtPayload;
       if (tokenVerify) {
         // deleting the cab Type by filter.
-        let data = await deleteCabService({ type: req.body.type });
+        let data = await cabModel.findOne({ type: req.body.type });
 
         // handling if cab Type not deleted.
         if (data !== null) {
@@ -297,13 +444,6 @@ export const deleteOneCabDetailsController = async (
           if (foundCab.length !== 0) {
             foundCab[0].cabs = foundCab[0].cabs.filter((cabDetail) => {
               // find that one cab
-              console.log(
-                cabDetail.colour == colour,
-                cabDetail.model_name == model_name,
-                cabDetail.no_of_seats == no_of_seats,
-                cabDetail.fuel_type == fuel_type,
-                cabDetail.model_no == model_no
-              );
               if (
                 cabDetail.colour == colour &&
                 cabDetail.model_no == model_no &&
@@ -358,8 +498,7 @@ export const getOneCabsController = async (req: Request, res: Response) => {
       const tokenVerify = jwt.verify(bearer.split(" ")[1], SecretKey);
       if (tokenVerify) {
         // finding the user by id got from the frontend.
-        const filter = { _id: req.params.id };
-        let data = await findCabService(filter);
+        let data = await cabModel.find();
 
         // checking if the user exists or not.
         if (data.length === 0) {

@@ -1,16 +1,9 @@
 import { NextFunction, Request, Response } from "express";
-import userModel, { User } from "../models/user";
 import jwt from "jsonwebtoken";
 import bcrypt from "bcrypt";
-import nodemailer from "nodemailer";
 const SecretKey = "lim4yAey6K78dA8N1yKof4Stp9H4A";
 
-import {
-  createUserService,
-  findUserService,
-  findAndUpdateUserService,
-  deleteUserService,
-} from "../services/user.service";
+import userModel, { User } from "../models/user";
 import driverModel from "../models/driver";
 
 // login user by username (email or mobile_no) and password.
@@ -44,14 +37,26 @@ export const loginUserController = async (req: Request, res: Response) => {
         bcrypt.compare(password, hashedPassword).then((results) => {
           if (results) {
             // creating the token
-            const token = jwt.sign({ user: user._id }, SecretKey);
+            const token = jwt.sign(
+              {
+                id: user._id,
+                username: user.name,
+                email_id: user.email_id,
+                mobile_no: user.mobile_no,
+                location: user.location,
+              },
+              SecretKey
+            );
             if (token) {
               //Success: if data is found and all operations are done.
               return res.status(200).send({
                 message: "Login Successful",
                 data: {
                   id: user._id,
-                  username: username,
+                  username: user.name,
+                  email_id: user.email_id,
+                  mobile_no: user.mobile_no,
+                  location: user.location,
                 },
                 token: token,
               });
@@ -99,16 +104,27 @@ export const verifyToken = (
 // Verify User by token got from frontend.
 export const verifyUserByToken = async (req: Request, res: Response) => {
   try {
-    const tokenVerify = jwt.verify(req.body.token, SecretKey);
-    if (tokenVerify) {
-      // Success : Token id
-      return res.status(200).send({
-        message: "Login by token Successful",
-        data: tokenVerify,
-      });
+    // access the header
+    const bearerHeader = req.headers.authorization;
+    if (bearerHeader !== undefined) {
+      const bearer: string = bearerHeader as string;
+      const tokenVerify = jwt.verify(
+        bearer.split(" ")[1],
+        SecretKey
+      ) as jwt.JwtPayload;
+      if (tokenVerify) {
+        // Success : Token id
+        return res.status(200).send({
+          message: "Login by token Successful",
+          data: tokenVerify,
+        });
+      } else {
+        //Error: if Header not found.
+        return res.status(404).json({ message: "Token not found" });
+      }
     } else {
-      // Error : Invalid Token
-      res.status(400).json({ message: "Cannot verify token" });
+      //Error: if Header not found.
+      return res.status(404).json({ message: "Token not found" });
     }
   } catch (e) {
     // Error : verifying the token
@@ -205,17 +221,19 @@ export const findOneUserController = async (req: Request, res: Response) => {
     const bearerHeader = req.headers.authorization;
     if (bearerHeader !== undefined) {
       const bearer: string = bearerHeader as string;
-      const tokenVerify = jwt.verify(bearer.split(" ")[1], SecretKey);
+      const tokenVerify = jwt.verify(
+        bearer.split(" ")[1],
+        SecretKey
+      ) as jwt.JwtPayload;
       if (tokenVerify) {
         // finding the user by id got from the frontend.
-        const filter = { _id: req.params.id };
-        let data = await findUserService(filter);
+        let data = await userModel.findById({ _id: tokenVerify.id });
 
         // checking if the user exists or not.
-        if (data.length === 0) {
+        if (!data) {
           return res.status(404).json({ message: "User not found" });
         } else {
-          const user = data[0];
+          const user = data;
           //Success: Return the all user details.
           return res.status(200).json({
             message: "finding one user is successful",
@@ -279,7 +297,7 @@ export const deleteUserController = async (req: Request, res: Response) => {
       ) as jwt.JwtPayload;
       if (tokenVerify) {
         // deleting the user by filter.
-        let data = await deleteUserService({ _id: tokenVerify.user });
+        let data = await userModel.findByIdAndDelete({ _id: tokenVerify.id });
 
         // handling if user not deleted.
         if (data !== null) {

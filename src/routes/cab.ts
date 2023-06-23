@@ -22,13 +22,13 @@ router.post("/createCab", createCab);
 // pass (params) replace :id with the id
 // get data: All details of driver
 
-router.get("/getOneTypeCabs/:id", getOneCabsController);
+router.put("/getOneCab", getOneCabsController);
 
 // get all Cabs Route---------------
-// pass nothing
+// pass just (headers)
 // get data: [All Cabs with all details]
 
-router.get("/getAllCabs", getAllCabsController);
+router.put("/getAllCabs", getAllCabsController);
 
 // delete Cab on the basis of type, colour, model_no and fuel_type-----------------------
 // pass (body) type, colour, model_no and fuel_type

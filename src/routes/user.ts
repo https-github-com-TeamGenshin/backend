@@ -24,7 +24,7 @@ router.post("/loginUser", loginUserController);
 // pass (header) authentication: bearer <token>
 // get data: {id: (_id from database), username: (username passed during login),},
 
-router.post("/verifyUserToken", verifyToken, verifyUserByToken);
+router.post("/verifyUserToken", verifyUserByToken);
 
 // Create user Route -----------------
 // pass (body) name, email_id, mobile_no, password, gender, age, location
@@ -36,7 +36,7 @@ router.post("/createUser", createUserController);
 // pass (params) replace :id with the id
 // get data: All details of user
 
-router.get("/getOneUser/:id", findOneUserController);
+router.get("/getOneUserAllData", findOneUserController);
 
 // get all users Route---------------
 // pass nothing
