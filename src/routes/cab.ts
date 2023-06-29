@@ -1,13 +1,14 @@
-import express, { NextFunction, Request, Response, Router } from "express";
+import { Router } from "express";
 const router: Router = Router();
 
 import {
   createCab,
-  getAllCabsController,
+  getAllFilteredCabsController,
   deleteCabDetailsController,
   deleteOneCabDetailsController,
   deleteTypeOfCabsController,
   getOneCabsController,
+  getAllSearchedCabsController,
 } from "../controller/cab";
 
 // All the data will be send in JSON format.
@@ -22,13 +23,19 @@ router.post("/createCab", createCab);
 // pass (params) replace :id with the id
 // get data: All details of driver
 
-router.put("/getOneCab", getOneCabsController);
+router.put("/getAllCab", getOneCabsController);
 
-// get all Cabs Route---------------
+// get all Cabs by filter Route---------------
 // pass just (headers)
 // get data: [All Cabs with all details]
 
-router.put("/getAllCabs", getAllCabsController);
+router.put("/getAllFilteredCabs", getAllFilteredCabsController);
+
+// get all Cabs by Search Route---------------
+// pass just (headers)
+// get data: [All Cabs with all details]
+
+router.put("/getAllSearchedCabs", getAllSearchedCabsController);
 
 // delete Cab on the basis of type, colour, model_no and fuel_type-----------------------
 // pass (body) type, colour, model_no and fuel_type

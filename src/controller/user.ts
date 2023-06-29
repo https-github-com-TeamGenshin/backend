@@ -1,4 +1,4 @@
-import { NextFunction, Request, Response } from "express";
+import { Request, Response } from "express";
 import jwt from "jsonwebtoken";
 import bcrypt from "bcrypt";
 const SecretKey = "lim4yAey6K78dA8N1yKof4Stp9H4A";
@@ -72,30 +72,6 @@ export const loginUserController = async (req: Request, res: Response) => {
   } catch (e) {
     //Error: if something breaks in code.
     return res.status(500).json({ message: "Server Error" });
-  }
-};
-
-// verify Token function.
-export const verifyToken = (
-  req: Request,
-  res: Response,
-  next: NextFunction
-) => {
-  const bearerHeader = req.headers.authorization;
-  if (bearerHeader !== undefined) {
-    const bearer: string = bearerHeader as string;
-    const token = bearer.split(" ")[1];
-    if (!token) {
-      // Error: unable to fetch Token
-      return res.status(400).json({ message: "Unable to fetch token" });
-    } else {
-      // Success pass token in body.
-      req.body.token = token;
-      next();
-    }
-  } else {
-    // Error: Invalid Token
-    return res.status(400).json({ message: "Invalid Token" });
   }
 };
 
