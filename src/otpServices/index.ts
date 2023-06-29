@@ -1,4 +1,4 @@
-import express, { NextFunction, Request, Response, Router } from "express";
+import { Request, Response, Router } from "express";
 const router: Router = Router();
 import jwt from "jsonwebtoken";
 import bcrypt from "bcrypt";

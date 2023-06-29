@@ -1,9 +1,8 @@
-import express, { NextFunction, Request, Response, Router } from "express";
+import { Router } from "express";
 const router: Router = Router();
 
 import {
   loginUserController,
-  verifyToken,
   verifyUserByToken,
   createUserController,
   findOneUserController,

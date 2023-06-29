@@ -1,5 +1,7 @@
-import { model, Schema, Document, Types } from "mongoose";
+import { model, Schema, Document } from "mongoose";
 import { locationSchema, Location } from "./driver";
+
+import cabModel from "./cab";
 
 // ------------------------------------------------------------------------
 export interface Requests extends Document {
@@ -7,10 +9,10 @@ export interface Requests extends Document {
   driver_id: string;
   cab_id: string;
   type: string;
-  model_no: string;
+  model_registration_no: string;
   location_user: Location;
-  kms: number;
-  time_required: Date;
+  kms: number | null;
+  time_required: Date | null;
   start_date: Date;
   request_status: string;
   createdAt?: Date;
@@ -31,11 +33,19 @@ const requestsSchema = new Schema<Requests>({
   location_user: {
     type: locationSchema,
   },
+  type: {
+    type: String,
+  },
+  model_registration_no: {
+    type: String,
+  },
   kms: {
     type: Number,
+    default: null,
   },
   time_required: {
     type: Date,
+    default: null,
   },
   request_status: {
     type: String,
