@@ -3,6 +3,7 @@ import jwt from "jsonwebtoken";
 const SecretKey = "lim4yAey6K78dA8N1yKof4Stp9H4A";
 
 import cabModel, { Cab, CabDetails } from "../models/cab";
+import userModel from "../models/user";
 
 // Create the Cab Controller
 export const createCab = async (req: Request, res: Response) => {
@@ -300,7 +301,10 @@ export const getAllSearchedCabsController = async (
   const bearerHeader = req.headers.authorization;
   if (bearerHeader !== undefined) {
     const bearer: string = bearerHeader as string;
-    const tokenVerify = jwt.verify(bearer.split(" ")[1], SecretKey);
+    const tokenVerify = jwt.verify(
+      bearer.split(" ")[1],
+      SecretKey
+    ) as jwt.JwtPayload;
     if (tokenVerify) {
       const {
         search,
@@ -309,6 +313,13 @@ export const getAllSearchedCabsController = async (
       }: { search: string; location: string; type: string } = req.body;
 
       let data: Cab[] | null = null;
+      let acceptedRequests: CabDetails[] | null | undefined = null;
+
+      const dataInUser = await userModel.findById({ _id: tokenVerify.id });
+
+      if (!dataInUser) {
+        return res.status(404).json({ message: "User not found" });
+      }
 
       if (type && !search && location) {
         data = await cabModel.find({
@@ -359,13 +370,15 @@ export const getAllSearchedCabsController = async (
         return res.status(404).json({ message: "Data not found" });
       } else {
         // Define the chunk size
-        const chunkSize = 7; // Number of items in each chunk
+        // const chunkSize = 7; // Number of items in each chunk
 
-        let totalChunks: number = 0;
-        let chunkData: CabDetails[] = [];
+        // let totalChunks: number = 0;
+        // let chunkData: CabDetails[] = [];
+
+        let filteredCabs: CabDetails[] | undefined = undefined;
 
         for (let i = 0; i < data.length; i++) {
-          const filteredCabs = data[i].cabs.filter((cab) => {
+          filteredCabs = data[i].cabs.filter((cab) => {
             // Perform the filtering based on the regular expression or model_name
             const regex = new RegExp(search, "i");
             return (
@@ -377,27 +390,41 @@ export const getAllSearchedCabsController = async (
               regex.test(cab.hrs_rate.toString())
             );
           });
-
-          // Calculate the total number of chunks
-          totalChunks += Math.ceil(filteredCabs.length / chunkSize);
-
-          // Get the requested chunk number from the query parameter
-          const requestedChunk = parseInt(req.query.chunk as string) || 1;
-
-          // Slice the filtered data array to get the desired chunk
-          const startIndex = (requestedChunk - 1) * chunkSize;
-          const endIndex = requestedChunk * chunkSize;
-          const chunkDataSlice = filteredCabs.slice(startIndex, endIndex);
-
-          // Merge the filtered chunk data with the overall chunk data
-          chunkData = chunkData.concat(chunkDataSlice);
         }
 
+        dataInUser?.accepted_request.forEach((request) => {
+          acceptedRequests = filteredCabs?.filter((cab) => {
+            return cab._id?.toString() === request.cab_id;
+          });
+        });
+
+        // Calculate the total number of chunks
+        // totalChunks += Math.ceil(filteredCabs.length / chunkSize);
+
+        // Get the requested chunk number from the query parameter
+        // const requestedChunk = parseInt(req.query.chunk as string) || 1;
+
+        // Slice the filtered data array to get the desired chunk
+        // const startIndex = (requestedChunk - 1) * chunkSize;
+        // const endIndex = requestedChunk * chunkSize;
+        // const chunkDataSlice = filteredCabs.slice(startIndex, endIndex);
+
+        // Merge the filtered chunk data with the overall chunk data
+        // chunkData = chunkData.concat(chunkDataSlice);
+        // }
+
         // Send the chunk data as a response
+        // return res.status(200).json({
+        //   message: "Get All Searched Cabs is successful",
+        //   totalChunks: totalChunks,
+        //   chunkData: chunkData,
+        // });
+
+        // send the whole data as a response
         return res.status(200).json({
           message: "Get All Searched Cabs is successful",
-          totalChunks: totalChunks,
-          chunkData: chunkData,
+          data: filteredCabs,
+          previouslyAccepted: acceptedRequests,
         });
       }
     } else {

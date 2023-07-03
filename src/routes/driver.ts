@@ -9,6 +9,8 @@ import {
   deleteDriverController,
   findOneDriverController,
   getDriversbyTypeController,
+  getDriversbyFilterController,
+  getAllSearchedDriversController,
 } from "../controller/driver";
 
 // All the data will be send in JSON format.
@@ -49,6 +51,17 @@ router.get("/getAllDrivers", getAllDriversController);
 // get data: [All Drivers with all details]
 
 router.put("/getDriversbyType", getDriversbyTypeController);
+
+// get all Drivers Route---------------
+// just pass headers
+// get data: [All Drivers with all details] in the form of array (chunk of 7)
+
+router.put("/getAllFilteredDrivers", getDriversbyFilterController);
+
+// get all Cabs by Search Route---------------
+// pass just (headers)
+// get data: two arrays of cabs previouslyAccepted and total number of cabs that matches the search
+router.put("/getAllSearchedDrivers", getAllSearchedDriversController);
 
 // delete Driver-----------------------
 // pass (params) replace :id with the id
