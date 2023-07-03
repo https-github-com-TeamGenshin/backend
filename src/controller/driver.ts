@@ -404,7 +404,10 @@ export const getAllSearchedDriversController = async (
     const bearerHeader = req.headers.authorization;
     if (bearerHeader !== undefined) {
       const bearer: string = bearerHeader as string;
-      const tokenVerify = jwt.verify(bearer.split(" ")[1], SecretKey);
+      const tokenVerify = jwt.verify(
+        bearer.split(" ")[1],
+        SecretKey
+      ) as jwt.JwtPayload;
       if (tokenVerify) {
         const {
           search,
@@ -413,6 +416,13 @@ export const getAllSearchedDriversController = async (
         }: { search: string; location: string; type: string } = req.body;
 
         let data: Driver[] | null = null;
+        let acceptedRequests: Driver[] | null | undefined = null;
+
+        const dataInUser = await userModel.findById({ _id: tokenVerify.id });
+
+        if (!dataInUser) {
+          return res.status(404).json({ message: "User not found" });
+        }
 
         if (!search && location && type) {
           // find data based on the type and the location
@@ -465,13 +475,15 @@ export const getAllSearchedDriversController = async (
           return res.status(404).json({ message: "Data not found" });
         } else {
           // Define the chunk size
-          const chunkSize = 7; // Number of items in each chunk
+          // const chunkSize = 7; // Number of items in each chunk
 
-          let totalChunks: number = 0;
-          let chunkData: Driver[] = [];
+          // let totalChunks: number = 0;
+          // let chunkData: Driver[] = [];
+
+          let filteredDrivers: Driver[] = [];
 
           for (let i = 0; i < data.length; i++) {
-            const filteredCabs = data.filter((driver) => {
+            filteredDrivers = data.filter((driver) => {
               // Perform the filtering based on the regular expression or model_name
               const regex = new RegExp(search, "i");
               return (
@@ -484,27 +496,41 @@ export const getAllSearchedDriversController = async (
                 regex.test(driver.rate_per_km.toString())
               );
             });
-
-            // Calculate the total number of chunks
-            totalChunks += Math.ceil(filteredCabs.length / chunkSize);
-
-            // Get the requested chunk number from the query parameter
-            const requestedChunk = parseInt(req.query.chunk as string) || 1;
-
-            // Slice the filtered data array to get the desired chunk
-            const startIndex = (requestedChunk - 1) * chunkSize;
-            const endIndex = requestedChunk * chunkSize;
-            const chunkDataSlice = filteredCabs.slice(startIndex, endIndex);
-
-            // Merge the filtered chunk data with the overall chunk data
-            chunkData = chunkData.concat(chunkDataSlice);
           }
 
+          dataInUser?.accepted_request.forEach((request) => {
+            acceptedRequests = filteredDrivers?.filter((driver) => {
+              return driver._id === request.driver_id;
+            });
+          });
+
+          // Calculate the total number of chunks
+          // totalChunks += Math.ceil(filteredCabs.length / chunkSize);
+
+          // Get the requested chunk number from the query parameter
+          // const requestedChunk = parseInt(req.query.chunk as string) || 1;
+
+          // Slice the filtered data array to get the desired chunk
+          // const startIndex = (requestedChunk - 1) * chunkSize;
+          // const endIndex = requestedChunk * chunkSize;
+          // const chunkDataSlice = filteredCabs.slice(startIndex, endIndex);
+
+          // Merge the filtered chunk data with the overall chunk data
+          //   chunkData = chunkData.concat(chunkDataSlice);
+          // }
+
           // Send the chunk data as a response
+          // return res.status(200).json({
+          //   message: "Get All Searched Drivers is successful",
+          //   totalChunks: totalChunks,
+          //   chunkData: chunkData,
+          // });
+
+          // send the whole data as a response
           return res.status(200).json({
             message: "Get All Searched Drivers is successful",
-            totalChunks: totalChunks,
-            chunkData: chunkData,
+            data: data,
+            previouslyAccepted: acceptedRequests,
           });
         }
       } else {

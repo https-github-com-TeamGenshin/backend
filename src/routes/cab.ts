@@ -27,13 +27,13 @@ router.put("/getAllCab", getOneCabsController);
 
 // get all Cabs by filter Route---------------
 // pass just (headers)
-// get data: [All Cabs with all details]
+// get data: [All Cabs with all details] in the form of array (chunk of 7)
 
 router.put("/getAllFilteredCabs", getAllFilteredCabsController);
 
 // get all Cabs by Search Route---------------
 // pass just (headers)
-// get data: [All Cabs with all details]
+// get data: two arrays of cabs previouslyAccepted and total number of cabs that matches the search
 
 router.put("/getAllSearchedCabs", getAllSearchedCabsController);
 
