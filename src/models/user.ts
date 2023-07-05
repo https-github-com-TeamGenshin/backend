@@ -1,5 +1,4 @@
 import { model, Schema, Document } from "mongoose";
-import { locationSchema, Location } from "./driver";
 
 //-------------------------------------------------------------------------
 export interface Accepted {
@@ -8,7 +7,8 @@ export interface Accepted {
   cab_id: string;
   type: string;
   model_registration_no: string;
-  location_user: Location;
+  source_location: string;
+  destination_location: string;
   kms: number | null;
   time_required: Date | null;
   start_date: Date;
@@ -42,13 +42,16 @@ const acceptedSchema = new Schema<Accepted>({
   cab_id: {
     type: String,
   },
-  location_user: {
-    type: locationSchema,
-  },
   type: {
     type: String,
   },
   model_registration_no: {
+    type: String,
+  },
+  source_location: {
+    type: String,
+  },
+  destination_location: {
     type: String,
   },
   kms: {

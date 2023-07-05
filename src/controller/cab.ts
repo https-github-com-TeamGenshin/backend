@@ -312,6 +312,13 @@ export const getAllSearchedCabsController = async (
         type,
       }: { search: string; location: string; type: string } = req.body;
 
+      const searchLength = search.length;
+      if (searchLength < 3) {
+        return res.status(400).json({
+          message: "Search string should be atleast 3 characters long",
+        });
+      }
+
       let data: Cab[] | null = null;
       let acceptedRequests: CabDetails[] | null | undefined = null;
 
