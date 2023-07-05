@@ -8,6 +8,7 @@ import driverModel, { Driver, Location } from "../models/driver";
 import userModel, { User } from "../models/user";
 import RequestModel from "../models/requests";
 import cabModel, { CabDetails } from "../models/cab";
+import { serialize } from "v8";
 
 export const getRequestsController = async (req: Request, res: Response) => {
   try {
@@ -61,253 +62,336 @@ export const getRequestsController = async (req: Request, res: Response) => {
   }
 };
 
+// Function to delete a request after the countdown finishes
+async function deleteRequestAfterCountdown(
+  userId: string,
+  driverId: string,
+  requestId: string
+) {
+  // Start the countdown (e.g., 15 minutes)
+  const countdownDuration = 30000; // 15 minutes in milliseconds
+  console.log("Countdown started");
+
+  // Wait for the countdown to finish
+  await new Promise<void>((resolve) => {
+    setTimeout(() => {
+      console.log("Countdown finished");
+      resolve();
+    }, countdownDuration);
+  });
+
+  const request = await RequestModel.findById({ _id: requestId });
+  const user = await userModel.findById({ _id: userId });
+  const driver = await driverModel.findById({ _id: driverId });
+  if (!request || !user || !driver) {
+    if (request) {
+      await RequestModel.findByIdAndDelete({ _id: requestId });
+    }
+    if (user) {
+      user.pending_request = "";
+      await user.save();
+    }
+    if (driver) {
+      driver.pendingRequests = driver.pendingRequests.filter((id) => {
+        return id !== requestId;
+      });
+      await driver.save();
+    }
+
+    return;
+  }
+
+  // If the request is accepted, then change pending settings
+  if (request.request_status === "Accepted") {
+    user.pending_request = "";
+    user.accepted_request.push(request);
+    await user.save();
+    driver.pendingRequests = driver.pendingRequests.filter((id) => {
+      return id !== requestId;
+    });
+    driver.acceptedRequests.push(requestId);
+    await driver.save();
+    return;
+  }
+
+  // If the request is rejected, then change pending settings
+  if (request.request_status === "Rejected") {
+    user.pending_request = "";
+    await user.save();
+    driver.pendingRequests = driver.pendingRequests.filter((id) => {
+      return id !== requestId;
+    });
+    await driver.save();
+    return;
+  }
+
+  // If the request is pending, then delete the request
+  if (request.request_status === "Pending") {
+    user.pending_request = "";
+    await user.save();
+    driver.pendingRequests = driver.pendingRequests.filter((id) => {
+      console.log(id, requestId);
+      return id !== requestId;
+    });
+    await driver.save();
+    // Delete the request
+    await RequestModel.findByIdAndDelete({ _id: requestId });
+    return;
+  }
+}
+
 export const createRequestController = async (req: Request, res: Response) => {
-  // try {
-  const bearerHeader = req.headers.authorization;
-  if (bearerHeader !== undefined) {
-    const bearer: string = bearerHeader as string;
-    const tokenVerify = jwt.verify(
-      bearer.split(" ")[1],
-      SecretKey
-    ) as jwt.JwtPayload;
-    if (tokenVerify) {
-      const driver = await driverModel.exists({ _id: tokenVerify.id });
-      const user = await userModel.exists({ _id: tokenVerify.id });
+  try {
+    const bearerHeader = req.headers.authorization;
+    if (bearerHeader !== undefined) {
+      const bearer: string = bearerHeader as string;
+      const tokenVerify = jwt.verify(
+        bearer.split(" ")[1],
+        SecretKey
+      ) as jwt.JwtPayload;
+      if (tokenVerify) {
+        const driver = await driverModel.exists({ _id: tokenVerify.id });
+        const user = await userModel.exists({ _id: tokenVerify.id });
 
-      if (driver || user) {
-        const {
-          location,
-          user_id,
-          driver_id,
-          type,
-          cab_id,
-          model_no,
-          kms,
-          time_required,
-          total_amount,
-          start_date,
-        }: {
-          request_type: string;
-          location: Location;
-          user_id: string;
-          driver_id: string;
-          type: string;
-          cab_id: string;
-          model_no: string;
-          total_amount: string;
-          kms: number;
-          time_required: Date;
-          start_date: Date;
-        } = req.body;
+        if (driver || user) {
+          const {
+            location,
+            user_id,
+            driver_id,
+            type,
+            cab_id,
+            model_no,
+            kms,
+            time_required,
+            total_amount,
+            start_date,
+          }: {
+            request_type: string;
+            location: Location;
+            user_id: string;
+            driver_id: string;
+            type: string;
+            cab_id: string;
+            model_no: string;
+            total_amount: string;
+            kms: number;
+            time_required: Date;
+            start_date: Date;
+          } = req.body;
 
-        type RequestData = {
-          error: string;
-          registrationNumber: string;
-          user: (User & { _id: any }) | null;
-          driver: (Driver & { _id: any }) | null;
-        };
+          type RequestData = {
+            error: string;
+            registrationNumber: string;
+            user: (User & { _id: any }) | null;
+            driver: (Driver & { _id: any }) | null;
+          };
 
-        const somenecessaryfields = async (): Promise<RequestData> => {
-          const cab = await cabModel.findById({ _id: cab_id });
+          const somenecessaryfields = async (): Promise<RequestData> => {
+            const cab = await cabModel.findById({ _id: cab_id });
 
-          const cabDetails = cab?.cabs.filter((cab) => {
-            return cab.model_no === model_no;
-          });
+            const cabDetails = cab?.cabs.filter((cab) => {
+              return cab.model_no === model_no;
+            });
 
-          if (!cabDetails || cabDetails.length === 0) {
-            // Check if the cab exists
-            return {
-              error: "Error in cab details",
-              registrationNumber: "",
-              user: null,
-              driver: null,
-            };
-          } else {
-            // find the driver and check if he is available
-            const driver = await driverModel.findById({ _id: driver_id });
-            if (!driver) {
+            if (!cabDetails || cabDetails.length === 0) {
+              // Check if the cab exists
               return {
-                error: "No such driver exists",
+                error: "Error in cab details",
                 registrationNumber: "",
                 user: null,
                 driver: null,
               };
-            } else if (driver.availability === false) {
+            } else {
+              // find the driver and check if he is available
+              const driver = await driverModel.findById({ _id: driver_id });
+              if (!driver) {
+                return {
+                  error: "No such driver exists",
+                  registrationNumber: "",
+                  user: null,
+                  driver: null,
+                };
+              } else if (driver.availability === false) {
+                return {
+                  error: "Driver is not available",
+                  registrationNumber: "",
+                  user: null,
+                  driver: null,
+                };
+              }
+
+              // find the user and check if he has a pending request
+              const user = await userModel.findById({ _id: user_id });
+              if (!user) {
+                return {
+                  error: "No such user exists",
+                  registrationNumber: "",
+                  user: null,
+                  driver: null,
+                };
+              } else if (user.pending_request.length !== 0) {
+                return {
+                  error: "User already has a pending request",
+                  registrationNumber: "",
+                  user: null,
+                  driver: null,
+                };
+              }
+
+              // create the request
+              const registrationNumber =
+                cabDetails[0].registration_number[
+                  Math.floor(
+                    Math.random() * cabDetails[0].registration_number.length
+                  )
+                ];
+
+              const newRegistrationNumbers =
+                cabDetails[0].registration_number.filter((regNo) => {
+                  return regNo !== registrationNumber;
+                });
+
+              cabDetails[0].registration_number = newRegistrationNumbers;
+              cabDetails[0].no_of_seats = cabDetails[0].no_of_seats - 1;
+
               return {
-                error: "Driver is not available",
-                registrationNumber: "",
-                user: null,
-                driver: null,
+                error: "No Errors",
+                registrationNumber: registrationNumber,
+                user: user,
+                driver: driver,
               };
             }
+          };
 
-            // find the user and check if he has a pending request
-            const user = await userModel.findById({ _id: user_id });
-            if (!user) {
-              return {
-                error: "No such user exists",
-                registrationNumber: "",
-                user: null,
-                driver: null,
-              };
-            } else if (user.pending_request.length !== 0) {
-              return {
-                error: "User already has a pending request",
-                registrationNumber: "",
-                user: null,
-                driver: null,
-              };
-            }
+          if (kms) {
+            if (
+              !user_id ||
+              !driver_id ||
+              !type ||
+              !cab_id ||
+              !model_no ||
+              !total_amount ||
+              !location ||
+              !start_date
+            ) {
+              // Check if all the fields are filled
+              return res
+                .status(400)
+                .json({ error: "Please fill all the fields" });
+            } else {
+              const { registrationNumber, user, driver, error } =
+                await somenecessaryfields();
 
-            // create the request
-            const registrationNumber =
-              cabDetails[0].registration_number[
-                Math.floor(
-                  Math.random() * cabDetails[0].registration_number.length
-                )
-              ];
-
-            const newRegistrationNumbers =
-              cabDetails[0].registration_number.filter((regNo) => {
-                return regNo !== registrationNumber;
+              if (error !== "No Errors" || !driver || !user) {
+                return res.status(400).json({ message: error });
+              }
+              // Create the request with the retrieved registration number
+              const request = await RequestModel.create({
+                user_id: user_id,
+                driver_id: driver_id,
+                cab_id: cab_id,
+                type: type,
+                model_registration_no: registrationNumber,
+                location: location,
+                kms: kms,
+                total_amount: total_amount,
+                time_required: null,
+                start_date: start_date,
               });
 
-            cabDetails[0].registration_number = newRegistrationNumbers;
-            cabDetails[0].no_of_seats = cabDetails[0].no_of_seats - 1;
+              console.log(driver);
+              driver.pendingRequests.push(request._id.toString());
+              console.log(driver.pendingRequests);
+              await driver.save();
 
-            return {
-              error: "No Errors",
-              registrationNumber: registrationNumber,
-              user: user,
-              driver: driver,
-            };
-          }
-        };
+              user.pending_request = request._id;
+              await user.save();
 
-        if (kms) {
-          if (
-            !user_id ||
-            !driver_id ||
-            !type ||
-            !cab_id ||
-            !model_no ||
-            !total_amount ||
-            !location ||
-            !start_date
-          ) {
-            // Check if all the fields are filled
-            return res
-              .status(400)
-              .json({ error: "Please fill all the fields" });
-          } else {
-            const { registrationNumber, user, driver, error } =
-              await somenecessaryfields();
+              deleteRequestAfterCountdown(
+                user_id,
+                driver_id,
+                request._id.toString()
+              );
 
-            if (error !== "No Errors" || !driver || !user) {
-              return res.status(400).json({ message: error });
+              // Return the request
+              return res.status(201).json({
+                message: "Successfully accepted the request",
+                data: request,
+              });
             }
-            // Create the request with the retrieved registration number
-            const request = await RequestModel.create({
-              user_id: user_id,
-              driver_id: driver_id,
-              cab_id: cab_id,
-              type: type,
-              model_registration_no: registrationNumber,
-              location: location,
-              kms: kms,
-              total_amount: total_amount,
-              time_required: null,
-              start_date: start_date,
-            });
+          } else if (time_required) {
+            if (
+              !user_id ||
+              !driver_id ||
+              !type ||
+              !cab_id ||
+              !model_no ||
+              !location ||
+              !total_amount ||
+              !start_date
+            ) {
+              // Check if all the fields are filled
+              return res
+                .status(400)
+                .json({ error: "Please fill all the fields" });
+            } else {
+              const { registrationNumber, user, driver, error } =
+                await somenecessaryfields();
 
-            console.log(driver);
-            driver.pendingRequests.push(request._id.toString());
-            console.log(driver.pendingRequests);
-            await driver.save();
+              if (error !== "No Errors" || !driver || !user) {
+                return res.status(400).json({ message: error });
+              }
 
-            user.pending_request = request._id;
-            await user.save();
+              const request = await RequestModel.create({
+                user_id: user_id,
+                driver_id: driver_id,
+                cab_id: cab_id,
+                type: type,
+                model_registration_no: registrationNumber,
+                location: location,
+                total_amount: total_amount,
+                kms: null,
+                time_required: time_required,
+                start_date: start_date,
+              });
 
-            // Return the request
-            return res.status(201).json({
-              message: "Successfully accepted the request",
-              data: request,
-            });
-          }
-        } else if (time_required) {
-          if (
-            !user_id ||
-            !driver_id ||
-            !type ||
-            !cab_id ||
-            !model_no ||
-            !location ||
-            !total_amount ||
-            !start_date
-          ) {
-            // Check if all the fields are filled
-            return res
-              .status(400)
-              .json({ error: "Please fill all the fields" });
-          } else {
-            const { registrationNumber, user, driver, error } =
-              await somenecessaryfields();
+              driver.pendingRequests.push(request._id.toString());
 
-            if (error !== "No Errors" || !driver || !user) {
-              return res.status(400).json({ message: error });
+              await driver.save();
+
+              user.pending_request = request._id;
+              await user.save();
+
+              deleteRequestAfterCountdown(
+                user_id,
+                driver_id,
+                request._id.toString()
+              );
+
+              // Success: Return the request
+              return res.status(201).json({
+                message: "Successfully accepted the request",
+                data: request,
+              });
             }
-
-            const request = await RequestModel.create({
-              user_id: user_id,
-              driver_id: driver_id,
-              cab_id: cab_id,
-              type: type,
-              model_registration_no: registrationNumber,
-              location: location,
-              total_amount: total_amount,
-              kms: null,
-              time_required: time_required,
-              start_date: start_date,
-            });
-
-            driver.pendingRequests.push(request._id.toString());
-
-            // const requests = driver.pendingRequests;
-            // if (!requests) {
-            //   console.log("here");
-            //   driver.pendingRequests = [request._id.toString()];
-            //   console.log(driver.pendingRequests);
-            // } else {
-            //   driver.pendingRequests = [...requests, request._id.toString()];
-            // }
-
-            await driver.save();
-
-            user.pending_request = request._id;
-            await user.save();
-
-            // Success: Return the request
-            return res.status(201).json({
-              message: "Successfully accepted the request",
-              data: request,
-            });
           }
+        } else {
+          return res
+            .status(400)
+            .json({ error: "No such user or driver exists" });
         }
       } else {
-        return res.status(400).json({ error: "No such user or driver exists" });
+        //Error: Token not valid.
+        return res.status(404).json({ message: "Token not valid" });
       }
     } else {
-      //Error: Token not valid.
-      return res.status(404).json({ message: "Token not valid" });
+      //Error: if Header not found.
+      return res.status(404).json({ message: "Token not found" });
     }
-  } else {
-    //Error: if Header not found.
-    return res.status(404).json({ message: "Token not found" });
+  } catch (err) {
+    // Error: if something breaks in code.
+    res.status(500).json({ error: "Internal Server Error" });
   }
-  // } catch (err) {
-  //   // Error: if something breaks in code.
-  //   res.status(500).json({ error: "Internal Server Error" });
-  // }
 };
 
 // Accept the request by the User

@@ -10,7 +10,7 @@ export interface Accepted {
   model_registration_no: string;
   location: Location;
   kms: number | null;
-  time_required: Date | null;
+  time_required: number | null;
   start_date: Date;
   request_status: string;
 }
@@ -56,7 +56,7 @@ const acceptedSchema = new Schema<Accepted>({
     default: null,
   },
   time_required: {
-    type: Date,
+    type: Number,
     default: null,
   },
   request_status: {
