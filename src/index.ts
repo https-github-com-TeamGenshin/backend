@@ -23,6 +23,8 @@ import driverRouter from "./routes/driver";
 app.use("/api/driver", driverRouter);
 
 // requests Route connection
+import requestsRouter from "./routes/requests";
+app.use("/api/request", requestsRouter);
 
 // user Route connection
 import userRouter from "./routes/user";

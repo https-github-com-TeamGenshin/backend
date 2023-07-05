@@ -3,7 +3,7 @@ import { model, Schema, Document, ObjectId } from "mongoose";
 // ------------------------------------------------------------------------
 export interface CabDetails {
   _id?: ObjectId;
-  registration_number: [string];
+  registration_number: string[];
   model_name: string;
   model_no: string;
   imageurl: string;

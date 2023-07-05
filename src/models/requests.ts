@@ -1,4 +1,6 @@
 import { model, Schema, Document } from "mongoose";
+import { locationSchema, Location } from "./driver";
+
 import cabModel from "./cab";
 
 // ------------------------------------------------------------------------
@@ -8,13 +10,11 @@ export interface Requests extends Document {
   cab_id: string;
   type: string;
   model_registration_no: string;
-  source_location: string;
-  destination_location: string;
+  location: Location;
   kms: number | null;
-  time_required: Date | null;
+  time_required: number | null;
   start_date: Date;
   request_status: string;
-  total_amount: string;
   createdAt?: Date;
 }
 // -----------------------------------------------------  Request Interface
@@ -30,11 +30,8 @@ const requestsSchema = new Schema<Requests>({
   cab_id: {
     type: String,
   },
-  source_location: {
-    type: String,
-  },
-  destination_location: {
-    type: String,
+  location: {
+    type: locationSchema,
   },
   type: {
     type: String,
@@ -47,15 +44,12 @@ const requestsSchema = new Schema<Requests>({
     default: null,
   },
   time_required: {
-    type: Date,
+    type: Number,
     default: null,
   },
   request_status: {
     type: String,
     default: "Pending",
-  },
-  total_amount: {
-    type: String,
   },
   start_date: {
     type: Date,
