@@ -17,9 +17,11 @@ export const createRequestController = async (req: Request, res: Response) => {
       type,
       cab_id,
       model_no,
-      location_user,
+      source_location,
+      destination_location,
       kms,
       time_required,
+      total_amount,
       start_date,
     }: {
       user_id: string;
@@ -27,7 +29,9 @@ export const createRequestController = async (req: Request, res: Response) => {
       type: string;
       cab_id: string;
       model_no: string;
-      location_user: string;
+      source_location: string;
+      destination_location: string;
+      total_amount: string;
       kms: number;
       time_required: Date;
       start_date: Date;
@@ -40,7 +44,9 @@ export const createRequestController = async (req: Request, res: Response) => {
         !type ||
         !cab_id ||
         !model_no ||
-        !location_user ||
+        !total_amount ||
+        !source_location ||
+        !destination_location ||
         !start_date
       ) {
         // Check if all the fields are filled
@@ -91,8 +97,10 @@ export const createRequestController = async (req: Request, res: Response) => {
             cab_id: cab_id,
             type: type,
             model_registration_no: cabDetails,
-            location_user: location_user,
+            source_location: source_location,
+            destination_location: destination_location,
             kms: kms,
+            total_amount: total_amount,
             time_required: null,
             start_date: start_date,
           });
@@ -119,7 +127,9 @@ export const createRequestController = async (req: Request, res: Response) => {
         !type ||
         !cab_id ||
         !model_no ||
-        !location_user ||
+        !source_location ||
+        !destination_location ||
+        !total_amount ||
         !start_date
       ) {
         // Check if all the fields are filled
@@ -168,7 +178,9 @@ export const createRequestController = async (req: Request, res: Response) => {
             cab_id: cab_id,
             type: type,
             model_registration_no: cabDetails,
-            location_user: location_user,
+            source_location: source_location,
+            destination_location: destination_location,
+            total_amount: total_amount,
             kms: null,
             time_required: time_required,
             start_date: start_date,
@@ -224,6 +236,8 @@ export const requestAcceptedByDriverController = async (
             request._id === request_id &&
             request.request_status !== "Accepted"
           ) {
+            // removing the createdAt field to make
+            request.createdAt = undefined;
             // check the user and driver
             const driver = await driverModel.findById({
               _id: request.driver_id,

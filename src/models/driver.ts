@@ -1,13 +1,6 @@
 import { Schema, model, Document } from "mongoose";
 
 // ------------------------------------------------------------------------
-export interface Location {
-  latitude: number;
-  longitude: number;
-}
-// ----------------------------------------------------- Location Interface
-
-// ------------------------------------------------------------------------
 export interface Driver extends Document {
   username: string;
   password: string;
@@ -15,6 +8,7 @@ export interface Driver extends Document {
   mobile_no: string;
   gender: string;
   age: number;
+  imageurl: string;
   rating: number;
   experience_years: number;
   location: string;
@@ -26,17 +20,6 @@ export interface Driver extends Document {
   pendingRequests: [string];
 }
 // ------------------------------------------------------- Driver Interface
-
-// ------------------------------------------------------------------------
-export const locationSchema = new Schema<Location>({
-  latitude: {
-    type: Number,
-  },
-  longitude: {
-    type: Number,
-  },
-});
-// -------------------------------------------------------- Location Schema
 
 // ------------------------------------------------------------------------
 const driverSchema = new Schema<Driver>({
@@ -53,6 +36,9 @@ const driverSchema = new Schema<Driver>({
     type: String,
   },
   gender: {
+    type: String,
+  },
+  imageurl: {
     type: String,
   },
   age: {

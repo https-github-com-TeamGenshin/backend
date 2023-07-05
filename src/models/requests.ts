@@ -1,6 +1,4 @@
 import { model, Schema, Document } from "mongoose";
-import { locationSchema, Location } from "./driver";
-
 import cabModel from "./cab";
 
 // ------------------------------------------------------------------------
@@ -10,11 +8,13 @@ export interface Requests extends Document {
   cab_id: string;
   type: string;
   model_registration_no: string;
-  location_user: Location;
+  source_location: string;
+  destination_location: string;
   kms: number | null;
   time_required: Date | null;
   start_date: Date;
   request_status: string;
+  total_amount: string;
   createdAt?: Date;
 }
 // -----------------------------------------------------  Request Interface
@@ -30,8 +30,11 @@ const requestsSchema = new Schema<Requests>({
   cab_id: {
     type: String,
   },
-  location_user: {
-    type: locationSchema,
+  source_location: {
+    type: String,
+  },
+  destination_location: {
+    type: String,
   },
   type: {
     type: String,
@@ -51,6 +54,9 @@ const requestsSchema = new Schema<Requests>({
     type: String,
     default: "Pending",
   },
+  total_amount: {
+    type: String,
+  },
   start_date: {
     type: Date,
   },
@@ -60,15 +66,6 @@ const requestsSchema = new Schema<Requests>({
   },
 });
 // --------------------------------------------------------- Request Schema
-
-// save the document using methods like save() or create() to change the data of createdAt
-// save the document after changing the request_status string to "Accepted"
-requestsSchema.pre<Requests>("save", function (next) {
-  if (this.request_status === "Accepted") {
-    this.createdAt = undefined;
-  }
-  next();
-});
 
 const RequestModel = model<Requests>("Requests", requestsSchema);
 

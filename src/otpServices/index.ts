@@ -117,7 +117,7 @@ function sendEmail(req: Request, OTP: number, name: string, type: string) {
 router.post("/otpEmail", async (req: Request, res: Response) => {
   try {
     // OTP and Find
-    const OTP = Math.floor(Math.random() * 9000 + 1000);
+    const OTP = Math.floor(Math.random() * 900000 + 100000);
     const findUser = await userModel.find({ email_id: req.body.email_id });
     const findDriver = await driverModel.find({ email_id: req.body.email_id });
 
@@ -239,7 +239,7 @@ router.post("/forgetPassword", async (req: Request, res: Response) => {
 router.post("/validateEmail", async (req: Request, res: Response) => {
   try {
     // Find user and OTP
-    const OTP = Math.floor(Math.random() * 9000 + 1000);
+    const OTP = Math.floor(Math.random() * 900000 + 100000);
     // Generating OTP
     const token = jwt.sign({ otp: OTP }, req.body.email_id);
     // Send Email Function
