@@ -90,10 +90,12 @@ export const verifyUserByToken = async (req: Request, res: Response) => {
       ) as jwt.JwtPayload;
       console.log(tokenVerify)
       if (tokenVerify) {
-        // Success : Token idx
+        // find out the user by id.
+        const user = await userModel.findById({ _id: tokenVerify.id });
+        // Success : Token id
         return res.status(200).send({
           message: "Login by token Successful",
-          data: tokenVerify,
+          data: user,
         });
       } else {
         //Error: if Header not found.

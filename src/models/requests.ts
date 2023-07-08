@@ -16,6 +16,7 @@ export interface Requests extends Document {
   time_required: number | null;
   start_date: Date;
   request_status: string;
+  total_amount: number;
   createdAt?: Date;
 }
 // -----------------------------------------------------  Request Interface
@@ -54,6 +55,10 @@ const requestsSchema = new Schema<Requests>({
   request_status: {
     type: String,
     default: "Pending",
+  },
+  total_amount: {
+    type: Number,
+    default: 0,
   },
   start_date: {
     type: Date,

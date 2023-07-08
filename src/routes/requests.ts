@@ -14,7 +14,7 @@ import {
 // get all requests Route---------------
 // pass request_id in body and headers
 // get data: [All requests with all details]
-router.get("/getRequests", getRequestsController);
+router.post("/getRequests", getRequestsController);
 
 // Create Request Route -----------------
 // pass (body) user_id, driver_id, cab_id, type, model_registration_no, source_location,
