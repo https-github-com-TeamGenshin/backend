@@ -89,10 +89,12 @@ export const verifyUserByToken = async (req: Request, res: Response) => {
         SecretKey
       ) as jwt.JwtPayload;
       if (tokenVerify) {
+        // find out the user by id.
+        const user = await userModel.findById({ _id: tokenVerify.id });
         // Success : Token id
         return res.status(200).send({
           message: "Login by token Successful",
-          data: tokenVerify,
+          data: user,
         });
       } else {
         //Error: if Header not found.

@@ -213,7 +213,7 @@ export const createRequestController = async (req: Request, res: Response) => {
           };
 
           const somenecessaryfields = async (): Promise<RequestData> => {
-            const cab = await cabModel.findById({ _id: cab_id });
+            const cab = await cabModel.findOne({ type: type });
 
             const cabDetails = cab?.cabs.filter((cab) => {
               return cab.model_no === model_no;
@@ -237,14 +237,16 @@ export const createRequestController = async (req: Request, res: Response) => {
                   user: null,
                   driver: null,
                 };
-              } else if (driver.availability === false) {
-                return {
-                  error: "Driver is not available",
-                  registrationNumber: "",
-                  user: null,
-                  driver: null,
-                };
               }
+              // Drivers availability
+              // else if (driver.availability === false) {
+              //   return {
+              //     error: "Driver is not available",
+              //     registrationNumber: "",
+              //     user: null,
+              //     driver: null,
+              //   };
+              // }
 
               // find the user and check if he has a pending request
               const user = await userModel.findById({ _id: user_id });
@@ -342,11 +344,11 @@ export const createRequestController = async (req: Request, res: Response) => {
 
               // Create a pusher trigger
               pusher
-                .trigger(request._id.toString(), "Requests", request)
-                .then(() => {
+                .trigger("Requests", request._id.toString(), request)
+                .then((e) => {
                   // Return the request
                   return res.status(201).json({
-                    message: "Successfully accepted the request",
+                    message: "Successfully created the request",
                     data: request,
                   });
                 });
@@ -405,7 +407,7 @@ export const createRequestController = async (req: Request, res: Response) => {
               // Create a pusher trigger
               pusher
                 .trigger(request._id.toString(), "Requests", request)
-                .then(() => {
+                .then((e) => {
                   // Success: Return the request
                   return res.status(201).json({
                     message: "Successfully Created the request",
@@ -501,7 +503,7 @@ export const requestAcceptedByDriverController = async (
 
               // Create a pusher trigger
               pusher
-                .trigger(request._id.toString(), "Requests", request)
+                .trigger("Requests", request._id.toString(), request)
                 .then(() => {
                   // Terminate the Pusher Trigger
                   terminateRequest(request?._id.toString());
@@ -596,9 +598,8 @@ export const requestRejectedByDriverController = async (
               await user.save();
               await requests.save();
               // Create a pusher trigger
-              console.log(requests);
               pusher
-                .trigger(requests._id.toString(), "Requests", requests)
+                .trigger("Requests", requests._id.toString(), requests)
                 .then(() => {
                   // Terminate the Pusher Trigger
                   terminateRequest(requests?._id.toString());
