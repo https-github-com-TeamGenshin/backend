@@ -1,6 +1,7 @@
 import express, { Request, Response } from "express";
 import cors from "cors";
 require("dotenv").config();
+import Pusher from "pusher";
 
 const app = express();
 const PORT = process.env.PORT || 5000;
@@ -9,6 +10,15 @@ app.use(express.json());
 app.use(
   express.urlencoded({ extended: false, limit: 10000, parameterLimit: 6 })
 );
+
+// Initialize Pusher
+const pusher = new Pusher({
+  appId: process.env.PUSHER_APP_ID || "",
+  key: process.env.PUSHER_KEY || "",
+  secret: process.env.PUSHER_SECRET || "",
+  cluster: "ap2",
+  useTLS: true,
+});
 
 // validation and reset password
 import OTPservices from "./otpServices/index";

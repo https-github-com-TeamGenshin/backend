@@ -4,6 +4,8 @@ const router: Router = Router();
 import {
   getRequestsController,
   createRequestController,
+  requestAcceptedByDriverController,
+  requestRejectedByDriverController,
 } from "../controller/requests";
 
 // All the data will be send in JSON format.
@@ -19,5 +21,15 @@ router.get("/getRequests", getRequestsController);
 // destination_location, kms, time_required, start_date, request_status, total_amount
 // get data: For now all the details after saving in database
 router.post("/createRequest", createRequestController);
+
+// Accept Request Route -----------------
+// pass (body) driver_id, request_id
+// get data: Request and the success message
+router.put("/acceptRequest", requestAcceptedByDriverController);
+
+// Reject Request Route -----------------
+// pass (body) driver_id, request_id
+// get data: Request and the success message
+router.put("/rejectRequest", requestRejectedByDriverController);
 
 export default router;

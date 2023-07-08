@@ -365,7 +365,7 @@ export const getDriversbyFilterController = async (
           return res.status(404).json({ message: "Data not found" });
         } else {
           // Define the chunk size
-          const chunkSize = 7; // Number of items in each chunk
+          const chunkSize = 8; // Number of items in each chunk
 
           // Calculate the total number of chunks
           const totalChunks = Math.ceil(data.length / chunkSize);
@@ -405,159 +405,159 @@ export const getAllSearchedDriversController = async (
   req: Request,
   res: Response
 ) => {
-  // try {
-  // access the header
-  const bearerHeader = req.headers.authorization;
-  if (bearerHeader !== undefined) {
-    const bearer: string = bearerHeader as string;
-    const tokenVerify = jwt.verify(
-      bearer.split(" ")[1],
-      SecretKey
-    ) as jwt.JwtPayload;
-    if (tokenVerify) {
-      const {
-        search,
-        location,
-        type,
-      }: { search: string; location: string; type: string } = req.body;
+  try {
+    // access the header
+    const bearerHeader = req.headers.authorization;
+    if (bearerHeader !== undefined) {
+      const bearer: string = bearerHeader as string;
+      const tokenVerify = jwt.verify(
+        bearer.split(" ")[1],
+        SecretKey
+      ) as jwt.JwtPayload;
+      if (tokenVerify) {
+        const {
+          search,
+          location,
+          type,
+        }: { search: string; location: string; type: string } = req.body;
 
-      let data: Driver[] | null = null;
-      let acceptedRequests: Driver[] | null | undefined = null;
+        let data: Driver[] | null = null;
+        let acceptedRequests: Driver[] | null | undefined = null;
 
-      const searchLength = search.length;
-      if (searchLength < 3) {
-        return res.status(400).json({
-          message: "Search string should be atleast 3 characters long",
-        });
-      }
+        const searchLength = search.length;
+        if (searchLength < 3) {
+          return res.status(400).json({
+            message: "Search string should be atleast 3 characters long",
+          });
+        }
 
-      const dataInUser = await userModel.findById({ _id: tokenVerify.id });
+        const dataInUser = await userModel.findById({ _id: tokenVerify.id });
 
-      if (!dataInUser) {
-        return res.status(404).json({ message: "User not found" });
-      }
+        if (!dataInUser) {
+          return res.status(404).json({ message: "User not found" });
+        }
 
-      if (!search && location && type) {
-        // find data based on the type and the location
-        data = await driverModel.find({
-          vehicle_preferred: { $in: [type] },
-          location: location,
-        });
-      } else if (search && location && type) {
-        const regex = new RegExp(search, "i");
-
-        // Check if the search string is a number
-        const regexNumber = Number(search);
-
-        if (isNaN(regexNumber)) {
-          // If the search string is not a number, then search for the string in the following fields
+        if (!search && location && type) {
+          // find data based on the type and the location
           data = await driverModel.find({
-            $or: [
-              { username: regex },
-              { email_id: regex },
-              { mobile_no: regex },
-            ],
             vehicle_preferred: { $in: [type] },
             location: location,
           });
+        } else if (search && location && type) {
+          const regex = new RegExp(search, "i");
+
+          // Check if the search string is a number
+          const regexNumber = Number(search);
+
+          if (isNaN(regexNumber)) {
+            // If the search string is not a number, then search for the string in the following fields
+            data = await driverModel.find({
+              $or: [
+                { username: regex },
+                { email_id: regex },
+                { mobile_no: regex },
+              ],
+              vehicle_preferred: { $in: [type] },
+              location: location,
+            });
+          } else {
+            // If the search string is a number, then search for the number in the following fields
+            data = await driverModel.find({
+              $or: [
+                { username: regex },
+                { email_id: regex },
+                { mobile_no: regex },
+                { rate_per_hrs: regexNumber },
+                { rate_per_km: regexNumber },
+                { experience_years: regexNumber },
+                { rating: regexNumber },
+              ],
+
+              vehicle_preferred: { $in: [type] },
+              location: location,
+            });
+          }
         } else {
-          // If the search string is a number, then search for the number in the following fields
-          data = await driverModel.find({
-            $or: [
-              { username: regex },
-              { email_id: regex },
-              { mobile_no: regex },
-              { rate_per_hrs: regexNumber },
-              { rate_per_km: regexNumber },
-              { experience_years: regexNumber },
-              { rating: regexNumber },
-            ],
+          // Error: Data Incomplete (Type and Location)
+          return res
+            .status(400)
+            .json({ message: "Data Incomplete ( Location and Type)" });
+        }
 
-            vehicle_preferred: { $in: [type] },
-            location: location,
+        if (!data || data.length === 0) {
+          return res.status(404).json({ message: "Data not found" });
+        } else {
+          // Define the chunk size
+          // const chunkSize = 7; // Number of items in each chunk
+
+          // let totalChunks: number = 0;
+          // let chunkData: Driver[] = [];
+
+          let filteredDrivers: Driver[] = [];
+
+          for (let i = 0; i < data.length; i++) {
+            filteredDrivers = data.filter((driver) => {
+              // Perform the filtering based on the regular expression or model_name
+              const regex = new RegExp(search, "i");
+              return (
+                regex.test(driver.username) ||
+                regex.test(driver.email_id) ||
+                regex.test(driver.mobile_no) ||
+                regex.test(driver.rating.toString()) ||
+                regex.test(driver.experience_years.toString()) ||
+                regex.test(driver.rate_per_hrs.toString()) ||
+                regex.test(driver.rate_per_km.toString())
+              );
+            });
+          }
+
+          dataInUser?.accepted_request.forEach((request) => {
+            acceptedRequests = filteredDrivers?.filter((driver) => {
+              return driver._id === request.driver_id;
+            });
+          });
+
+          // Calculate the total number of chunks
+          // totalChunks += Math.ceil(filteredCabs.length / chunkSize);
+
+          // Get the requested chunk number from the query parameter
+          // const requestedChunk = parseInt(req.query.chunk as string) || 1;
+
+          // Slice the filtered data array to get the desired chunk
+          // const startIndex = (requestedChunk - 1) * chunkSize;
+          // const endIndex = requestedChunk * chunkSize;
+          // const chunkDataSlice = filteredCabs.slice(startIndex, endIndex);
+
+          // Merge the filtered chunk data with the overall chunk data
+          //   chunkData = chunkData.concat(chunkDataSlice);
+          // }
+
+          // Send the chunk data as a response
+          // return res.status(200).json({
+          //   message: "Get All Searched Drivers is successful",
+          //   totalChunks: totalChunks,
+          //   chunkData: chunkData,
+          // });
+
+          // send the whole data as a response
+          return res.status(200).json({
+            message: "Get All Searched Drivers is successful",
+            data: data,
+            previouslyAccepted: acceptedRequests,
           });
         }
       } else {
-        // Error: Data Incomplete (Type and Location)
-        return res
-          .status(400)
-          .json({ message: "Data Incomplete ( Location and Type)" });
-      }
-
-      if (!data || data.length === 0) {
-        return res.status(404).json({ message: "Data not found" });
-      } else {
-        // Define the chunk size
-        // const chunkSize = 7; // Number of items in each chunk
-
-        // let totalChunks: number = 0;
-        // let chunkData: Driver[] = [];
-
-        let filteredDrivers: Driver[] = [];
-
-        for (let i = 0; i < data.length; i++) {
-          filteredDrivers = data.filter((driver) => {
-            // Perform the filtering based on the regular expression or model_name
-            const regex = new RegExp(search, "i");
-            return (
-              regex.test(driver.username) ||
-              regex.test(driver.email_id) ||
-              regex.test(driver.mobile_no) ||
-              regex.test(driver.rating.toString()) ||
-              regex.test(driver.experience_years.toString()) ||
-              regex.test(driver.rate_per_hrs.toString()) ||
-              regex.test(driver.rate_per_km.toString())
-            );
-          });
-        }
-
-        dataInUser?.accepted_request.forEach((request) => {
-          acceptedRequests = filteredDrivers?.filter((driver) => {
-            return driver._id === request.driver_id;
-          });
-        });
-
-        // Calculate the total number of chunks
-        // totalChunks += Math.ceil(filteredCabs.length / chunkSize);
-
-        // Get the requested chunk number from the query parameter
-        // const requestedChunk = parseInt(req.query.chunk as string) || 1;
-
-        // Slice the filtered data array to get the desired chunk
-        // const startIndex = (requestedChunk - 1) * chunkSize;
-        // const endIndex = requestedChunk * chunkSize;
-        // const chunkDataSlice = filteredCabs.slice(startIndex, endIndex);
-
-        // Merge the filtered chunk data with the overall chunk data
-        //   chunkData = chunkData.concat(chunkDataSlice);
-        // }
-
-        // Send the chunk data as a response
-        // return res.status(200).json({
-        //   message: "Get All Searched Drivers is successful",
-        //   totalChunks: totalChunks,
-        //   chunkData: chunkData,
-        // });
-
-        // send the whole data as a response
-        return res.status(200).json({
-          message: "Get All Searched Drivers is successful",
-          data: data,
-          previouslyAccepted: acceptedRequests,
-        });
+        //Error: Token not valid.
+        return res.status(404).json({ message: "Token not valid" });
       }
     } else {
-      //Error: Token not valid.
-      return res.status(404).json({ message: "Token not valid" });
+      //Error: if Header not found.
+      return res.status(404).json({ message: "Token not found" });
     }
-  } else {
-    //Error: if Header not found.
-    return res.status(404).json({ message: "Token not found" });
+  } catch (e) {
+    //Error: if something breaks in code.
+    return res.status(500).json({ message: "Server Error" });
   }
-  // } catch (e) {
-  //   //Error: if something breaks in code.
-  //   return res.status(500).json({ message: "Server Error" });
-  // }
 };
 
 // Get all drivers with respect to type in the database.
@@ -684,6 +684,53 @@ export const deleteDriverController = async (req: Request, res: Response) => {
     } else {
       //Error: Driver provided not found in database.
       return res.status(400).json({ message: "Cannot find Driver" });
+    }
+  } catch (e) {
+    //Error: if something breaks in code.
+    return res.status(500).json({ message: "Server Error" });
+  }
+};
+
+export const updateDriverStatusController = async (
+  req: Request,
+  res: Response
+) => {
+  try {
+    const { status } = req.body;
+    if (status === undefined) {
+      //Error: status not found.
+      return res.status(404).json({ message: "Status not found" });
+    } else {
+      // access the header
+      const bearerHeader = req.headers.authorization;
+      if (bearerHeader !== undefined) {
+        const bearer: string = bearerHeader as string;
+        const tokenVerify = jwt.verify(
+          bearer.split(" ")[1],
+          SecretKey
+        ) as jwt.JwtPayload;
+        if (tokenVerify) {
+          // find the driver by id got from the frontend.
+          let data = await driverModel.findById({ _id: tokenVerify.id });
+          if (data === null) {
+            return res.status(404).json({ message: "Driver not found" });
+          } else {
+            data.availability = status;
+            data = await data.save();
+            //Success: Return the all driver details.
+            return res.status(200).json({
+              message: "Status changed successfully",
+              data: data,
+            });
+          }
+        } else {
+          //Error: Token not valid.
+          return res.status(404).json({ message: "Token not valid" });
+        }
+      } else {
+        //Error: if Header not found.
+        return res.status(404).json({ message: "Token not found" });
+      }
     }
   } catch (e) {
     //Error: if something breaks in code.

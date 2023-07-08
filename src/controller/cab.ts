@@ -256,7 +256,7 @@ export const getAllFilteredCabsController = async (
           return res.status(404).json({ message: "Data not found" });
         } else {
           // Define the chunk size
-          const chunkSize = 7; // Number of items in each chunk
+          const chunkSize = 8; // Number of items in each chunk
 
           // Calculate the total number of chunks
           const totalChunks = Math.ceil(data.cabs.length / chunkSize);
@@ -296,156 +296,156 @@ export const getAllSearchedCabsController = async (
   req: Request,
   res: Response
 ) => {
-  // try {
-  // Access the header
-  const bearerHeader = req.headers.authorization;
-  if (bearerHeader !== undefined) {
-    const bearer: string = bearerHeader as string;
-    const tokenVerify = jwt.verify(
-      bearer.split(" ")[1],
-      SecretKey
-    ) as jwt.JwtPayload;
-    if (tokenVerify) {
-      const {
-        search,
-        location,
-        type,
-      }: { search: string; location: string; type: string } = req.body;
+  try {
+    // Access the header
+    const bearerHeader = req.headers.authorization;
+    if (bearerHeader !== undefined) {
+      const bearer: string = bearerHeader as string;
+      const tokenVerify = jwt.verify(
+        bearer.split(" ")[1],
+        SecretKey
+      ) as jwt.JwtPayload;
+      if (tokenVerify) {
+        const {
+          search,
+          location,
+          type,
+        }: { search: string; location: string; type: string } = req.body;
 
-      const searchLength = search.length;
-      if (searchLength < 3) {
-        return res.status(400).json({
-          message: "Search string should be atleast 3 characters long",
-        });
-      }
+        const searchLength = search.length;
+        if (searchLength < 3) {
+          return res.status(400).json({
+            message: "Search string should be atleast 3 characters long",
+          });
+        }
 
-      let data: Cab[] | null = null;
-      let acceptedRequests: CabDetails[] | null | undefined = null;
+        let data: Cab[] | null = null;
+        let acceptedRequests: CabDetails[] | null | undefined = null;
 
-      const dataInUser = await userModel.findById({ _id: tokenVerify.id });
+        const dataInUser = await userModel.findById({ _id: tokenVerify.id });
 
-      if (!dataInUser) {
-        return res.status(404).json({ message: "User not found" });
-      }
+        if (!dataInUser) {
+          return res.status(404).json({ message: "User not found" });
+        }
 
-      if (type && !search && location) {
-        data = await cabModel.find({
-          type: type,
-          "cabs.location": location,
-        });
-      } else if (type && search && location) {
-        // Create a regular expression object with the search term and the 'i' option for case-insensitive matching
-        const regex = new RegExp(search, "i");
-
-        const regexNumber = Number(search);
-
-        if (isNaN(regexNumber)) {
-          // Perform the search query using the regular expression
+        if (type && !search && location) {
           data = await cabModel.find({
             type: type,
             "cabs.location": location,
-            $or: [
-              { "cabs.model_name": regex },
-              { "cabs.model_no": regex },
-              { "cabs.fuel_type": regex },
-              { "cabs.colour": regex },
-            ],
           });
+        } else if (type && search && location) {
+          // Create a regular expression object with the search term and the 'i' option for case-insensitive matching
+          const regex = new RegExp(search, "i");
+
+          const regexNumber = Number(search);
+
+          if (isNaN(regexNumber)) {
+            // Perform the search query using the regular expression
+            data = await cabModel.find({
+              type: type,
+              "cabs.location": location,
+              $or: [
+                { "cabs.model_name": regex },
+                { "cabs.model_no": regex },
+                { "cabs.fuel_type": regex },
+                { "cabs.colour": regex },
+              ],
+            });
+          } else {
+            // Perform the search query using the regular expression
+            data = await cabModel.find({
+              type: type,
+              "cabs.location": location,
+              $or: [
+                { "cabs.model_name": regex },
+                { "cabs.model_no": regex },
+                { "cabs.fuel_type": regex },
+                { "cabs.colour": regex },
+                { "cabs.kms_rate": regexNumber },
+                { "cabs.hrs_rate": regexNumber },
+              ],
+            });
+          }
         } else {
-          // Perform the search query using the regular expression
-          data = await cabModel.find({
-            type: type,
-            "cabs.location": location,
-            $or: [
-              { "cabs.model_name": regex },
-              { "cabs.model_no": regex },
-              { "cabs.fuel_type": regex },
-              { "cabs.colour": regex },
-              { "cabs.kms_rate": regexNumber },
-              { "cabs.hrs_rate": regexNumber },
-            ],
+          // Error: Data Incomplete (Type and Location)
+          return res
+            .status(400)
+            .json({ message: "Data Incomplete (Type and Location)" });
+        }
+
+        if (!data || data.length === 0) {
+          return res.status(404).json({ message: "Data not found" });
+        } else {
+          // Define the chunk size
+          // const chunkSize = 7; // Number of items in each chunk
+
+          // let totalChunks: number = 0;
+          // let chunkData: CabDetails[] = [];
+
+          let filteredCabs: CabDetails[] | undefined = undefined;
+
+          for (let i = 0; i < data.length; i++) {
+            filteredCabs = data[i].cabs.filter((cab) => {
+              // Perform the filtering based on the regular expression or model_name
+              const regex = new RegExp(search, "i");
+              return (
+                regex.test(cab.model_name) ||
+                regex.test(cab.model_no) ||
+                regex.test(cab.fuel_type) ||
+                regex.test(cab.colour) ||
+                regex.test(cab.kms_rate.toString()) ||
+                regex.test(cab.hrs_rate.toString())
+              );
+            });
+          }
+
+          dataInUser?.accepted_request.forEach((request) => {
+            acceptedRequests = filteredCabs?.filter((cab) => {
+              return cab._id?.toString() === request.cab_id;
+            });
+          });
+
+          // Calculate the total number of chunks
+          // totalChunks += Math.ceil(filteredCabs.length / chunkSize);
+
+          // Get the requested chunk number from the query parameter
+          // const requestedChunk = parseInt(req.query.chunk as string) || 1;
+
+          // Slice the filtered data array to get the desired chunk
+          // const startIndex = (requestedChunk - 1) * chunkSize;
+          // const endIndex = requestedChunk * chunkSize;
+          // const chunkDataSlice = filteredCabs.slice(startIndex, endIndex);
+
+          // Merge the filtered chunk data with the overall chunk data
+          // chunkData = chunkData.concat(chunkDataSlice);
+          // }
+
+          // Send the chunk data as a response
+          // return res.status(200).json({
+          //   message: "Get All Searched Cabs is successful",
+          //   totalChunks: totalChunks,
+          //   chunkData: chunkData,
+          // });
+
+          // send the whole data as a response
+          return res.status(200).json({
+            message: "Get All Searched Cabs is successful",
+            data: filteredCabs,
+            previouslyAccepted: acceptedRequests,
           });
         }
       } else {
-        // Error: Data Incomplete (Type and Location)
-        return res
-          .status(400)
-          .json({ message: "Data Incomplete (Type and Location)" });
-      }
-
-      if (!data || data.length === 0) {
-        return res.status(404).json({ message: "Data not found" });
-      } else {
-        // Define the chunk size
-        // const chunkSize = 7; // Number of items in each chunk
-
-        // let totalChunks: number = 0;
-        // let chunkData: CabDetails[] = [];
-
-        let filteredCabs: CabDetails[] | undefined = undefined;
-
-        for (let i = 0; i < data.length; i++) {
-          filteredCabs = data[i].cabs.filter((cab) => {
-            // Perform the filtering based on the regular expression or model_name
-            const regex = new RegExp(search, "i");
-            return (
-              regex.test(cab.model_name) ||
-              regex.test(cab.model_no) ||
-              regex.test(cab.fuel_type) ||
-              regex.test(cab.colour) ||
-              regex.test(cab.kms_rate.toString()) ||
-              regex.test(cab.hrs_rate.toString())
-            );
-          });
-        }
-
-        dataInUser?.accepted_request.forEach((request) => {
-          acceptedRequests = filteredCabs?.filter((cab) => {
-            return cab._id?.toString() === request.cab_id;
-          });
-        });
-
-        // Calculate the total number of chunks
-        // totalChunks += Math.ceil(filteredCabs.length / chunkSize);
-
-        // Get the requested chunk number from the query parameter
-        // const requestedChunk = parseInt(req.query.chunk as string) || 1;
-
-        // Slice the filtered data array to get the desired chunk
-        // const startIndex = (requestedChunk - 1) * chunkSize;
-        // const endIndex = requestedChunk * chunkSize;
-        // const chunkDataSlice = filteredCabs.slice(startIndex, endIndex);
-
-        // Merge the filtered chunk data with the overall chunk data
-        // chunkData = chunkData.concat(chunkDataSlice);
-        // }
-
-        // Send the chunk data as a response
-        // return res.status(200).json({
-        //   message: "Get All Searched Cabs is successful",
-        //   totalChunks: totalChunks,
-        //   chunkData: chunkData,
-        // });
-
-        // send the whole data as a response
-        return res.status(200).json({
-          message: "Get All Searched Cabs is successful",
-          data: filteredCabs,
-          previouslyAccepted: acceptedRequests,
-        });
+        // Error: Invalid User or Driver
+        return res.status(400).json({ message: "Invalid User or Driver" });
       }
     } else {
-      // Error: Invalid User or Driver
-      return res.status(400).json({ message: "Invalid User or Driver" });
+      // Error: Error in finding the token
+      return res.status(400).json({ message: "Error in token" });
     }
-  } else {
-    // Error: Error in finding the token
-    return res.status(400).json({ message: "Error in token" });
+  } catch (e) {
+    // Error: Something breaks in the code.
+    return res.status(500).json({ message: "Server Error" });
   }
-  // } catch (e) {
-  //   // Error: Something breaks in the code.
-  //   return res.status(500).json({ message: "Server Error" });
-  // }
 };
 
 // Delete One Type of Cab Details.

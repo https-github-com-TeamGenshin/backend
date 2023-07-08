@@ -9,6 +9,7 @@ export interface Requests extends Document {
   driver_id: string;
   cab_id: string;
   type: string;
+  model_name: string;
   model_registration_no: string;
   location: Location;
   kms: number | null;
@@ -34,6 +35,9 @@ const requestsSchema = new Schema<Requests>({
     type: locationSchema,
   },
   type: {
+    type: String,
+  },
+  model_name: {
     type: String,
   },
   model_registration_no: {

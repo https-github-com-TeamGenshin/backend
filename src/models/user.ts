@@ -7,6 +7,7 @@ export interface Accepted {
   driver_id: string;
   cab_id: string;
   type: string;
+  model_name: string;
   model_registration_no: string;
   location: Location;
   kms: number | null;
@@ -58,6 +59,9 @@ const acceptedSchema = new Schema<Accepted>({
   time_required: {
     type: Number,
     default: null,
+  },
+  model_name: {
+    type: String,
   },
   request_status: {
     type: String,

@@ -8,6 +8,21 @@ export interface Location {
 // ----------------------------------------------------- Location Interface
 
 // ------------------------------------------------------------------------
+export interface Accept {
+  user_id: string;
+  cab_id: string;
+  type: string;
+  model_name: string;
+  model_registration_no: string;
+  location: Location;
+  kms: number | null;
+  time_required: number | null;
+  start_date: Date;
+}
+
+// ---------------------------------------------------------- Accept Schema
+
+// ------------------------------------------------------------------------
 export interface Driver extends Document {
   username: string;
   password: string;
@@ -22,7 +37,7 @@ export interface Driver extends Document {
   vehicle_preferred: string[];
   rate_per_km: number;
   rate_per_hrs: number;
-  acceptedRequests: string[];
+  acceptedRequests: Accept[];
   pendingRequests: string[];
 }
 // ------------------------------------------------------- Driver Interface
@@ -37,6 +52,43 @@ export const locationSchema = new Schema<Location>({
   },
 });
 // -------------------------------------------------------- Location Schema
+
+// ------------------------------------------------------------------------
+
+export const acceptSchema = new Schema<Accept>({
+  user_id: {
+    type: String,
+  },
+  cab_id: {
+    type: String,
+  },
+  location: {
+    type: locationSchema,
+  },
+  type: {
+    type: String,
+  },
+  model_name: {
+    type: String,
+  },
+  model_registration_no: {
+    type: String,
+  },
+
+  kms: {
+    type: Number,
+    default: null,
+  },
+  time_required: {
+    type: Number,
+    default: null,
+  },
+  start_date: {
+    type: Date,
+  },
+});
+
+// ---------------------------------------------------------- Accept Schema
 
 // ------------------------------------------------------------------------
 const driverSchema = new Schema<Driver>({
@@ -69,6 +121,7 @@ const driverSchema = new Schema<Driver>({
   },
   availability: {
     type: Boolean,
+    default: false,
   },
   vehicle_preferred: {
     type: [String],
@@ -80,7 +133,7 @@ const driverSchema = new Schema<Driver>({
     type: Number,
   },
   acceptedRequests: {
-    type: [String],
+    type: [acceptSchema],
   },
   pendingRequests: {
     type: [String],

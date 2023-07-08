@@ -11,6 +11,7 @@ import {
   getDriversbyTypeController,
   getDriversbyFilterController,
   getAllSearchedDriversController,
+  updateDriverStatusController,
 } from "../controller/driver";
 
 // All the data will be send in JSON format.
@@ -68,5 +69,11 @@ router.put("/getAllSearchedDrivers", getAllSearchedDriversController);
 // get data: deletedCount should be equals 1
 
 router.delete("/deleteDriver", deleteDriverController);
+
+// Update status of driver
+// pass (headers) and status(boolean)
+// get success meassage
+
+router.post("/updateStatus", updateDriverStatusController);
 
 export default router;

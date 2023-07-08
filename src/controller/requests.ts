@@ -3,12 +3,36 @@ import jwt from "jsonwebtoken";
 import bcrypt from "bcrypt";
 const SecretKey = "lim4yAey6K78dA8N1yKof4Stp9H4A";
 import corn from "node-cron";
+import Pusher from "pusher";
 
 import driverModel, { Driver, Location } from "../models/driver";
 import userModel, { User } from "../models/user";
 import RequestModel from "../models/requests";
 import cabModel, { CabDetails } from "../models/cab";
-import { serialize } from "v8";
+require("dotenv").config();
+
+// Initialize Pusher
+const pusher = new Pusher({
+  appId: process.env.PUSHER_APP_ID || "",
+  key: process.env.PUSHER_KEY || "",
+  secret: process.env.PUSHER_SECRET || "",
+  cluster: "ap2",
+  useTLS: true,
+});
+
+const terminateRequest = async (requestId: string) => {
+  const countdownDuration = 120000; // 15 minutes in milliseconds
+
+  // Wait for the countdown to finish
+  await new Promise<void>((resolve) => {
+    setTimeout(() => {
+      resolve();
+    }, countdownDuration);
+  });
+
+  pusher.terminateUserConnections(requestId);
+  console.log(`Confirmed Termination of ${requestId}`);
+};
 
 export const getRequestsController = async (req: Request, res: Response) => {
   try {
@@ -69,13 +93,14 @@ async function deleteRequestAfterCountdown(
   requestId: string
 ) {
   // Start the countdown (e.g., 15 minutes)
-  const countdownDuration = 30000; // 15 minutes in milliseconds
-  console.log("Countdown started");
+  // const countdownDuration = 60000; // 15 minutes in milliseconds
+  const countdownDuration = 14 * 60 * 1000; // 14 minutes in milliseconds
+  console.log(`Countdown started for Delete Request of ${requestId}`);
 
   // Wait for the countdown to finish
   await new Promise<void>((resolve) => {
     setTimeout(() => {
-      console.log("Countdown finished");
+      console.log(`Countdown finished for Delete Request of ${requestId}`);
       resolve();
     }, countdownDuration);
   });
@@ -102,35 +127,34 @@ async function deleteRequestAfterCountdown(
   }
 
   // If the request is accepted, then change pending settings
-  if (request.request_status === "Accepted") {
-    user.pending_request = "";
-    user.accepted_request.push(request);
-    await user.save();
-    driver.pendingRequests = driver.pendingRequests.filter((id) => {
-      return id !== requestId;
-    });
-    driver.acceptedRequests.push(requestId);
-    await driver.save();
-    return;
-  }
+  // if (request.request_status === "Accepted") {
+  //   user.pending_request = "";
+  //   user.accepted_request.push(request);
+  //   await user.save();
+  //   driver.pendingRequests = driver.pendingRequests.filter((id) => {
+  //     return id !== requestId;
+  //   });
+  //   driver.acceptedRequests.push(requestId);
+  //   await driver.save();
+  //   return;
+  // }
 
   // If the request is rejected, then change pending settings
-  if (request.request_status === "Rejected") {
-    user.pending_request = "";
-    await user.save();
-    driver.pendingRequests = driver.pendingRequests.filter((id) => {
-      return id !== requestId;
-    });
-    await driver.save();
-    return;
-  }
+  // if (request.request_status === "Rejected") {
+  //   user.pending_request = "";
+  //   await user.save();
+  //   driver.pendingRequests = driver.pendingRequests.filter((id) => {
+  //     return id !== requestId;
+  //   });
+  //   await driver.save();
+  //   return;
+  // }
 
   // If the request is pending, then delete the request
   if (request.request_status === "Pending") {
     user.pending_request = "";
     await user.save();
     driver.pendingRequests = driver.pendingRequests.filter((id) => {
-      console.log(id, requestId);
       return id !== requestId;
     });
     await driver.save();
@@ -165,6 +189,7 @@ export const createRequestController = async (req: Request, res: Response) => {
             time_required,
             total_amount,
             start_date,
+            model_name,
           }: {
             request_type: string;
             location: Location;
@@ -177,6 +202,7 @@ export const createRequestController = async (req: Request, res: Response) => {
             kms: number;
             time_required: Date;
             start_date: Date;
+            model_name: string;
           } = req.body;
 
           type RequestData = {
@@ -272,7 +298,8 @@ export const createRequestController = async (req: Request, res: Response) => {
               !model_no ||
               !total_amount ||
               !location ||
-              !start_date
+              !start_date ||
+              !model_name
             ) {
               // Check if all the fields are filled
               return res
@@ -297,11 +324,11 @@ export const createRequestController = async (req: Request, res: Response) => {
                 total_amount: total_amount,
                 time_required: null,
                 start_date: start_date,
+                model_name: model_name,
               });
 
-              console.log(driver);
               driver.pendingRequests.push(request._id.toString());
-              console.log(driver.pendingRequests);
+
               await driver.save();
 
               user.pending_request = request._id;
@@ -313,11 +340,16 @@ export const createRequestController = async (req: Request, res: Response) => {
                 request._id.toString()
               );
 
-              // Return the request
-              return res.status(201).json({
-                message: "Successfully accepted the request",
-                data: request,
-              });
+              // Create a pusher trigger
+              pusher
+                .trigger(request._id.toString(), "Requests", request)
+                .then(() => {
+                  // Return the request
+                  return res.status(201).json({
+                    message: "Successfully accepted the request",
+                    data: request,
+                  });
+                });
             }
           } else if (time_required) {
             if (
@@ -328,7 +360,8 @@ export const createRequestController = async (req: Request, res: Response) => {
               !model_no ||
               !location ||
               !total_amount ||
-              !start_date
+              !start_date ||
+              !model_name
             ) {
               // Check if all the fields are filled
               return res
@@ -353,6 +386,7 @@ export const createRequestController = async (req: Request, res: Response) => {
                 kms: null,
                 time_required: time_required,
                 start_date: start_date,
+                model_name: model_name,
               });
 
               driver.pendingRequests.push(request._id.toString());
@@ -368,11 +402,23 @@ export const createRequestController = async (req: Request, res: Response) => {
                 request._id.toString()
               );
 
-              // Success: Return the request
-              return res.status(201).json({
-                message: "Successfully accepted the request",
-                data: request,
-              });
+              // Create a pusher trigger
+              pusher
+                .trigger(request._id.toString(), "Requests", request)
+                .then(() => {
+                  // Success: Return the request
+                  return res.status(201).json({
+                    message: "Successfully Created the request",
+                    data: request,
+                  });
+                })
+                .catch((error) => {
+                  return res.status(500).json({
+                    message:
+                      "Cannot create a pusher trigger but created the Request",
+                    data: request,
+                  });
+                });
             }
           }
         } else {
@@ -421,7 +467,7 @@ export const requestAcceptedByDriverController = async (
             // Check if the request exists
             return res.status(400).json({ error: "No such request exists" });
           } else if (
-            request._id === request_id &&
+            request._id.toString() === request_id &&
             request.request_status !== "Accepted"
           ) {
             // removing the createdAt field to make
@@ -431,6 +477,7 @@ export const requestAcceptedByDriverController = async (
               _id: request.driver_id,
             });
             const user = await userModel.findById({ _id: request.user_id });
+
             if (!driver || !user) {
               return res
                 .status(400)
@@ -440,14 +487,46 @@ export const requestAcceptedByDriverController = async (
               // Check if the request is already accepted
               request.request_status = "Accepted";
               request = await request.save();
-              user.accepted_request.push(request._id.toString());
-              await user.save();
-              // Success: Return the request
-              return res.status(201).json({
-                message: "Successfully accepted the request",
-                data: request,
+              // Change the status of the driver
+              driver.pendingRequests = driver.pendingRequests.filter((id) => {
+                return id !== request_id;
               });
+              driver.acceptedRequests.push(request);
+              await driver.save();
+
+              // Change the status of the user
+              user.pending_request = "";
+              user.accepted_request.push(request);
+              await user.save();
+
+              // Create a pusher trigger
+              pusher
+                .trigger(request._id.toString(), "Requests", request)
+                .then(() => {
+                  // Terminate the Pusher Trigger
+                  terminateRequest(request?._id.toString());
+                  // Return the request
+                  return res.status(201).json({
+                    message: "Successfully accepted the request",
+                    data: request,
+                  });
+                })
+                .catch((error) => {
+                  return res.status(500).json({
+                    message:
+                      "Cannot create a pusher trigger but request accepted",
+                    data: request,
+                  });
+                });
             }
+          } else if (
+            request.request_status === "Accepted" ||
+            request.request_status === "Rejected"
+          ) {
+            // Error: Request already accepted
+            return res
+              .status(400)
+              .json({ error: "Request already accepted or Rejected" });
           }
         }
       } else {
@@ -490,7 +569,7 @@ export const requestRejectedByDriverController = async (
             // Check if the request exists
             return res.status(400).json({ error: "No such request exists" });
           } else if (
-            requests._id === request_id &&
+            requests._id.toString() === request_id &&
             requests.request_status === "Pending"
           ) {
             // check the user and driver
@@ -504,12 +583,47 @@ export const requestRejectedByDriverController = async (
                 .json({ error: "No such user or driver exists" });
             } else {
               requests.request_status = "Rejected";
-              await requests.save();
-              return res.status(201).json({
-                message: "Successfully rejected the request",
-                data: requests,
+              requests.createdAt = undefined;
+
+              // Change the status of the driver
+              driver.pendingRequests = driver.pendingRequests.filter((id) => {
+                return id !== request_id;
               });
+              await driver.save();
+
+              // Change the status of the user
+              user.pending_request = "";
+              await user.save();
+              await requests.save();
+              // Create a pusher trigger
+              console.log(requests);
+              pusher
+                .trigger(requests._id.toString(), "Requests", requests)
+                .then(() => {
+                  // Terminate the Pusher Trigger
+                  terminateRequest(requests?._id.toString());
+                  // Return the request
+                  return res.status(201).json({
+                    message: "Successfully Cancelled the request",
+                    data: requests,
+                  });
+                })
+                .catch((error) => {
+                  return res.status(500).json({
+                    message:
+                      "Cannot create a pusher trigger but request Rejected",
+                    data: requests,
+                  });
+                });
             }
+          } else if (
+            requests.request_status === "Accepted" ||
+            requests.request_status === "Rejected"
+          ) {
+            // Error: Request already accepted
+            return res
+              .status(400)
+              .json({ error: "Request already accepted or Rejected" });
           }
         }
       } else {
@@ -525,14 +639,6 @@ export const requestRejectedByDriverController = async (
     return res.status(500).json({ message: "Server Error" });
   }
 };
-
-// Change to unavailable of the driver with respect to the request
-
-// Change the new time_required of the request
-
-// Change the new kms of the request
-
-// Change to available of the driver with respect to the request
 
 // Schedule a task to delete the documents
 const deleteExpiredRequests = corn.schedule("00 00 00 * * *", async () => {
