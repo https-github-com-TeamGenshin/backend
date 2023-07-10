@@ -1,11 +1,14 @@
-import { model, Schema, Document } from "mongoose";
+import { model, Schema, Document, ObjectId } from "mongoose";
 import { locationSchema, Location } from "./driver";
 
 //-------------------------------------------------------------------------
 export interface Accepted {
+  _id?: ObjectId;
   user_id: string;
   driver_id: string;
   cab_id: string;
+  driver_name: string;
+  imageURL: string;
   type: string;
   model_name: string;
   model_registration_no: string;
@@ -45,6 +48,12 @@ const acceptedSchema = new Schema<Accepted>({
   },
   location: {
     type: locationSchema,
+  },
+  driver_name: {
+    type: String,
+  },
+  imageURL: {
+    type: String,
   },
   type: {
     type: String,

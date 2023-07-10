@@ -8,6 +8,7 @@ import {
   deleteOneCabDetailsController,
   deleteTypeOfCabsController,
   getOneCabsController,
+  updateCabController,
   getAllSearchedCabsController,
 } from "../controller/cab";
 
@@ -20,10 +21,16 @@ import {
 router.post("/createCab", createCab);
 
 // find Cab Route ------------------
-// pass (params) replace :id with the id
-// get data: All details of driver
+// pass (body) replace :id with the id
+// get data: details of One Cab
 
-router.put("/getAllCab", getOneCabsController);
+router.put("/getOneCab", getOneCabsController);
+
+// Update Cab Route ------------------
+// pass all the details of cabs in body
+// get data: Success Message
+
+router.put("/updateCab", updateCabController);
 
 // get all Cabs by filter Route---------------
 // pass just (headers)

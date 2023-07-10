@@ -44,6 +44,7 @@ export const loginUserController = async (req: Request, res: Response) => {
                 email_id: user.email_id,
                 mobile_no: user.mobile_no,
                 location: user.location,
+                role: "user",
               },
               SecretKey
             );
@@ -57,6 +58,7 @@ export const loginUserController = async (req: Request, res: Response) => {
                   email_id: user.email_id,
                   mobile_no: user.mobile_no,
                   location: user.location,
+                  role: "user",
                 },
                 token: token,
               });
@@ -90,11 +92,10 @@ export const verifyUserByToken = async (req: Request, res: Response) => {
       ) as jwt.JwtPayload;
       if (tokenVerify) {
         // find out the user by id.
-        const user = await userModel.findById({ _id: tokenVerify.id });
         // Success : Token id
         return res.status(200).send({
           message: "Login by token Successful",
-          data: user,
+          data: tokenVerify,
         });
       } else {
         //Error: if Header not found.
@@ -295,6 +296,85 @@ export const deleteUserController = async (req: Request, res: Response) => {
     } else {
       //Error: User provided not found in database.
       return res.status(400).json({ message: "Cannot find User" });
+    }
+  } catch (e) {
+    //Error: if something breaks in code.
+    return res.status(500).json({ message: "Server Error" });
+  }
+};
+
+export const getAllAcceptedRequestController = async (
+  req: Request,
+  res: Response
+) => {
+  try {
+    // access the header
+    const bearerHeader = req.headers.authorization;
+    if (bearerHeader !== undefined) {
+      const bearer: string = bearerHeader as string;
+      const tokenVerify = jwt.verify(
+        bearer.split(" ")[1],
+        SecretKey
+      ) as jwt.JwtPayload;
+      if (tokenVerify) {
+        // find all the users
+        let users = await userModel.findById({ _id: tokenVerify.id });
+        const data = users?.accepted_request.map(
+          ({ driver_name, start_date, model_registration_no, _id }) => {
+            return { driver_name, start_date, model_registration_no, _id };
+          }
+        );
+        // Success : send all users
+        return res.json({
+          message: "Finding all users are successful!",
+          data: data,
+        });
+      } else {
+        //Error: Token not valid.
+        return res.status(404).json({ message: "Token not valid" });
+      }
+    } else {
+      //Error: if Header not found.
+      return res.status(404).json({ message: "Token not found" });
+    }
+  } catch (e) {
+    //Error: if something breaks in code.
+    return res.status(500).json({ message: "Server Error" });
+  }
+};
+
+export const getOnAcceptedRequestController = async (
+  req: Request,
+  res: Response
+) => {
+  try {
+    // access the header
+    const bearerHeader = req.headers.authorization;
+    if (bearerHeader !== undefined) {
+      const bearer: string = bearerHeader as string;
+      const tokenVerify = jwt.verify(
+        bearer.split(" ")[1],
+        SecretKey
+      ) as jwt.JwtPayload;
+      if (tokenVerify) {
+        const { _id } = req.body;
+        // find all the users
+        let users = await userModel.findById({ _id: tokenVerify.id });
+        const data = users?.accepted_request.find((accepted) => {
+          return _id === accepted._id;
+        });
+        // Success : send all users
+        return res.json({
+          message: "Finding all users are successful!",
+          data: data,
+        });
+      } else {
+        //Error: Token not valid.
+        return res.status(404).json({ message: "Token not valid" });
+      }
+    } else {
+      //Error: if Header not found.
+      return res.status(404).json({ message: "Token not found" });
     }
   } catch (e) {
     //Error: if something breaks in code.

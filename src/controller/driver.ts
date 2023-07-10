@@ -46,6 +46,7 @@ export const loginDriverController = async (req: Request, res: Response) => {
                 location: driver.location,
                 rate_per_km: driver.rate_per_km,
                 rate_per_hrs: driver.rate_per_hrs,
+                role: "driver",
               },
               SecretKey
             );
@@ -56,6 +57,14 @@ export const loginDriverController = async (req: Request, res: Response) => {
                 data: {
                   id: driver._id,
                   username: username,
+                  email_id: driver.email_id,
+                  mobile_no: driver.mobile_no,
+                  rating: driver.rating,
+                  experience_years: driver.experience_years,
+                  location: driver.location,
+                  rate_per_km: driver.rate_per_km,
+                  rate_per_hrs: driver.rate_per_hrs,
+                  role: "driver",
                 },
                 token: token,
               });
@@ -312,8 +321,13 @@ export const getDriversbyFilterController = async (
           // find data based on the type and the location
           data = await driverModel.find({
             vehicle_preferred: { $in: [type] },
-            location: location,
           });
+          data = data.filter((driver) => {
+            return driver.location === location;
+          });
+          if (data.length === 0) {
+            return res.status(200).json({ message: "Data not found" });
+          }
         } else {
           // Error: Data Incomplete (Type and Location)
           return res
@@ -440,8 +454,10 @@ export const getAllSearchedDriversController = async (
         if (!search && location && type) {
           // find data based on the type and the location
           data = await driverModel.find({
-            vehicle_preferred: { $in: [type] },
-            location: location,
+            $and: [
+              { vehicle_preferred: { $in: [type] } },
+              { location: location },
+            ],
           });
         } else if (search && location && type) {
           const regex = new RegExp(search, "i");

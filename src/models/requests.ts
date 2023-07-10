@@ -7,6 +7,8 @@ import cabModel from "./cab";
 export interface Requests extends Document {
   user_id: string;
   driver_id: string;
+  driver_name: string;
+  imageURL: string;
   cab_id: string;
   type: string;
   model_name: string;
@@ -27,6 +29,12 @@ const requestsSchema = new Schema<Requests>({
     type: String,
   },
   driver_id: {
+    type: String,
+  },
+  driver_name: {
+    type: String,
+  },
+  imageURL: {
     type: String,
   },
   cab_id: {

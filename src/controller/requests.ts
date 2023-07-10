@@ -61,6 +61,7 @@ export const getRequestsController = async (req: Request, res: Response) => {
               // Check if the request exists
               return res.status(400).json({ error: "No such request exists" });
             } else {
+              // Success: Return the request
               return res.status(201).json({
                 message: "Successfully fetched the request",
                 data: Request,
@@ -68,6 +69,7 @@ export const getRequestsController = async (req: Request, res: Response) => {
             }
           }
         } else {
+          //Error: No user or driver exists.
           return res
             .status(400)
             .json({ error: "No such user or driver exists" });
@@ -318,6 +320,8 @@ export const createRequestController = async (req: Request, res: Response) => {
               const request = await RequestModel.create({
                 user_id: user_id,
                 driver_id: driver_id,
+                driver_name: driver.username,
+                imageURL: driver.imageURL,
                 cab_id: cab_id,
                 type: type,
                 model_registration_no: registrationNumber,
@@ -382,6 +386,8 @@ export const createRequestController = async (req: Request, res: Response) => {
                 driver_id: driver_id,
                 cab_id: cab_id,
                 type: type,
+                driver_name: driver.username,
+                imageURL: driver.imageURL,
                 model_registration_no: registrationNumber,
                 location: location,
                 total_amount: total_amount,

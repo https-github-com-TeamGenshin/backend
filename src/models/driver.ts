@@ -30,6 +30,7 @@ export interface Driver extends Document {
   mobile_no: string;
   gender: string;
   age: number;
+  imageURL: string;
   rating: number;
   experience_years: number;
   location: string;
@@ -59,6 +60,7 @@ export const acceptSchema = new Schema<Accept>({
   user_id: {
     type: String,
   },
+
   cab_id: {
     type: String,
   },
@@ -96,6 +98,9 @@ const driverSchema = new Schema<Driver>({
     type: String,
   },
   password: {
+    type: String,
+  },
+  imageURL: {
     type: String,
   },
   email_id: {

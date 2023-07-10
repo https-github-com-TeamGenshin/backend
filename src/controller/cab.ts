@@ -8,112 +8,126 @@ import userModel from "../models/user";
 // Create the Cab Controller
 export const createCab = async (req: Request, res: Response) => {
   try {
-    const {
-      registration_number,
-      model_name,
-      model_no,
-      colour,
-      imageurl,
-      no_of_seats,
-      kms_rate,
-      location,
-      fuel_type,
-      hrs_rate,
-      type,
-      no_of_available,
-    } = req.body;
-    if (
-      !registration_number ||
-      !location ||
-      !model_name ||
-      !model_no ||
-      !colour ||
-      !imageurl ||
-      !no_of_seats ||
-      !kms_rate ||
-      !hrs_rate ||
-      !fuel_type ||
-      !no_of_available ||
-      !type
-    ) {
-      // anyone details not available
-      return res.status(400).json({ message: "Data Incomplete Error" });
-    } else if (registration_number.length !== no_of_available) {
-      // registation number and no of available does not match
-      return res.status(400).json({
-        message:
-          "registration number array and the no of available vehicles does not match",
-      });
-    } else {
-      // Searching if the cab already exists in database
-      const modelNo = model_no.trim();
-      const query = {
-        "cabs.model_no": modelNo, // Replace with the desired model_no
-        "cabs.colour": colour, // Replace with the desired colour
-        "cabs.fuel_type": fuel_type, // Replace with the desired fuel_type
-      };
-
-      const findCab = await cabModel.find(query);
-      if (findCab.length !== 0) {
-        // Error: Details already exist need to update the details.
-        return res
-          .status(400)
-          .json({ message: "Cab Details already exists, Update the details" });
+    // access the header
+    const bearerHeader = req.headers.authorization;
+    const bearer: string = bearerHeader as string;
+    const tokenVerify = jwt.verify(
+      bearer.split(" ")[1],
+      SecretKey
+    ) as jwt.JwtPayload;
+    if (tokenVerify.id === "64917e44fbe829eda5f5d7c2") {
+      const {
+        registration_number,
+        model_name,
+        model_no,
+        colour,
+        imageurl,
+        no_of_seats,
+        kms_rate,
+        location,
+        fuel_type,
+        hrs_rate,
+        type,
+        no_of_available,
+      } = req.body;
+      if (
+        !registration_number ||
+        !location ||
+        !model_name ||
+        !model_no ||
+        !colour ||
+        !imageurl ||
+        !no_of_seats ||
+        !kms_rate ||
+        !hrs_rate ||
+        !fuel_type ||
+        !no_of_available ||
+        !type
+      ) {
+        // anyone details not available
+        return res.status(400).json({ message: "Data Incomplete Error" });
+      } else if (registration_number.length !== no_of_available) {
+        // registation number and no of available does not match
+        return res.status(400).json({
+          message:
+            "registration number array and the no of available vehicles does not match",
+        });
       } else {
-        // find for the same type of vehicle exists in database or not.
-        const findType = await cabModel.find({ type: type });
+        // Searching if the cab already exists in database
+        const modelNo = model_no.trim();
+        const query = {
+          "cabs.model_no": modelNo, // Replace with the desired model_no
+          "cabs.colour": colour, // Replace with the desired colour
+          "cabs.fuel_type": fuel_type, // Replace with the desired fuel_type
+        };
 
-        if (findType.length !== 0) {
-          // Type of car exist need to save the new Cab in database
-          const newCabDetails = {
-            registration_number: registration_number,
-            imageurl: imageurl,
-            model_name: model_name,
-            model_no: modelNo,
-            location: location,
-            colour: colour,
-            no_of_seats: no_of_seats,
-            hrs_rate: hrs_rate,
-            kms_rate: kms_rate,
-            fuel_type: fuel_type,
-            no_of_available: no_of_available,
-          };
-          findType[0].cabs.push(newCabDetails);
-          // save
-          const savedCab = await findType[0].save();
-          // Success: save the cab.
-          return res.status(200).json({
-            message: "Cab is Saved Successfully",
-            data: savedCab,
-          });
+        const findCab = await cabModel.find(query);
+        if (findCab.length !== 0) {
+          // Error: Details already exist need to update the details.
+          return res
+            .status(400)
+            .json({
+              message: "Cab Details already exists, Update the details",
+            });
         } else {
-          // Creating the new type and data of cab in database
-          const savedCab = await cabModel.create({
-            type: type,
-            cabs: [
-              {
-                registration_number: registration_number,
-                imageurl: imageurl,
-                model_name: model_name,
-                model_no: modelNo,
-                colour: colour,
-                location: location,
-                no_of_seats: no_of_seats,
-                hrs_rate: hrs_rate,
-                kms_rate: kms_rate,
-                fuel_type: fuel_type,
-                no_of_available: no_of_available,
-              },
-            ],
-          });
+          // find for the same type of vehicle exists in database or not.
+          const findType = await cabModel.find({ type: type });
 
-          //Success: return the success status
-          return res.status(200).json({
-            message: "Cab is Saved Successfully",
-            data: savedCab,
-          });
+          if (findType.length !== 0) {
+            // Type of car exist need to save the new Cab in database
+            const newCabDetails = {
+              registration_number: registration_number,
+              imageurl: imageurl,
+              model_name: model_name,
+              model_no: modelNo,
+              location: location,
+              colour: colour,
+              no_of_seats: no_of_seats,
+              hrs_rate: hrs_rate,
+              kms_rate: kms_rate,
+              fuel_type: fuel_type,
+              no_of_available: no_of_available,
+            };
+            findType[0].cabs.push(newCabDetails);
+            // save
+            const savedCab = await findType[0].save();
+            // Success: save the cab.
+            return res.status(200).json({
+              message: "Cab is Saved Successfully",
+              data: savedCab,
+            });
+          } else {
+            // Creating the new type and data of cab in database
+            const savedCab = await cabModel.create({
+              type: type,
+              cabs: [
+                {
+                  registration_number: registration_number,
+                  imageurl: imageurl,
+                  model_name: model_name,
+                  model_no: modelNo,
+                  colour: colour,
+                  location: location,
+                  no_of_seats: no_of_seats,
+                  hrs_rate: hrs_rate,
+                  kms_rate: kms_rate,
+                  fuel_type: fuel_type,
+                  no_of_available: no_of_available,
+                },
+              ],
+            });
+
+            //Success: return the success status
+            return res.status(200).json({
+              message: "Cab is Saved Successfully",
+              data: savedCab,
+            });
+          }
         }
       }
+    } else {
+      //Error: cab provided not found in database.
+      return res.status(400).json({ message: "Cannot find cab" });
     }
   } catch (e) {
     //Error: Server Error
@@ -462,7 +476,7 @@ export const deleteTypeOfCabsController = async (
         bearer.split(" ")[1],
         SecretKey
       ) as jwt.JwtPayload;
-      if (tokenVerify) {
+      if (tokenVerify.id === "64917e44fbe829eda5f5d7c2") {
         // deleting the cab Type by filter.
         let data = await cabModel.findOne({ type: req.body.type });
 
@@ -505,7 +519,7 @@ export const deleteCabDetailsController = async (
         bearer.split(" ")[1],
         SecretKey
       ) as jwt.JwtPayload;
-      if (tokenVerify) {
+      if (tokenVerify.id === "64917e44fbe829eda5f5d7c2") {
         const { type, colour, model_no, fuel_type } = req.body;
         if (!type || !colour || !model_no || !fuel_type) {
           //Error: cab provided not found in database.
@@ -561,7 +575,7 @@ export const deleteOneCabDetailsController = async (
         bearer.split(" ")[1],
         SecretKey
       ) as jwt.JwtPayload;
-      if (tokenVerify) {
+      if (tokenVerify.id === "64917e44fbe829eda5f5d7c2") {
         const {
           type,
           colour,
@@ -634,27 +648,123 @@ export const deleteOneCabDetailsController = async (
   }
 };
 
+export const updateCabController = async (req: Request, res: Response) => {
+  try {
+    // access the header
+    const bearerHeader = req.headers.authorization;
+    if (bearerHeader !== undefined) {
+      const bearer: string = bearerHeader as string;
+      const tokenVerify = jwt.verify(
+        bearer.split(" ")[1],
+        SecretKey
+      ) as jwt.JwtPayload;
+      if (tokenVerify.id === "64917e44fbe829eda5f5d7c2") {
+        const {
+          _id,
+          registration_number,
+          model_name,
+          model_no,
+          colour,
+          imageurl,
+          no_of_seats,
+          kms_rate,
+          fuel_type,
+          hrs_rate,
+          type,
+          no_of_available,
+        } = req.body;
+        if (
+          !_id ||
+          !registration_number ||
+          !model_name ||
+          !model_no ||
+          !colour ||
+          !imageurl ||
+          !no_of_seats ||
+          !kms_rate ||
+          !hrs_rate ||
+          !fuel_type ||
+          !no_of_available ||
+          !type
+        ) {
+          // anyone details not available
+          return res.status(400).json({ message: "Data Incomplete Error" });
+        } else {
+          // find the cab type and remove the cab that is mentioned
+          const foundCab = await cabModel.find({ type: req.body.type });
+
+          if (foundCab.length !== 0) {
+            const foundElement = foundCab[0].cabs.find((cab) => cab._id == _id);
+            if (foundElement) {
+              foundElement.registration_number = registration_number;
+              foundElement.model_name = model_name;
+              foundElement.model_no = model_no;
+              foundElement.colour = colour;
+              foundElement.imageurl = imageurl;
+              foundElement.no_of_seats = no_of_seats;
+              foundElement.kms_rate = kms_rate;
+              foundElement.fuel_type = fuel_type;
+              foundElement.hrs_rate = hrs_rate;
+              foundElement.no_of_available = no_of_available;
+            } else {
+              return res.status(404).json({ message: "Cab not found" });
+            }
+
+            const savedCab = foundCab[0].save();
+
+            // Success: Data deleted successfully
+            return res
+              .status(200)
+              .json({ message: "Cab details deleted", savedCab: savedCab });
+          } else {
+            //Error: if Header not found.
+            return res.status(404).json({ message: "Cab Type not found" });
+          }
+        }
+      }
+    } else {
+      //Error: cab provided not found in database.
+      return res.status(400).json({ message: "Cannot find cab" });
+    }
+  } catch (e) {
+    //Error: if something breaks in code.
+    return res.status(500).json({ message: "Server Error" });
+  }
+};
+
 export const getOneCabsController = async (req: Request, res: Response) => {
   try {
     // access the header
     const bearerHeader = req.headers.authorization;
     if (bearerHeader !== undefined) {
       const bearer: string = bearerHeader as string;
-      const tokenVerify = jwt.verify(bearer.split(" ")[1], SecretKey);
-      if (tokenVerify) {
-        // finding the user by id got from the frontend.
-        let data = await cabModel.find();
-
-        // checking if the user exists or not.
-        if (data.length === 0) {
-          return res.status(404).json({ message: "User not found" });
+      const tokenVerify = jwt.verify(
+        bearer.split(" ")[1],
+        SecretKey
+      ) as jwt.JwtPayload;
+      if (tokenVerify.id === "64917e44fbe829eda5f5d7c2") {
+        const { _id, type }: { _id: string; type: string } = req.body;
+        if (!_id || !type) {
+          return res.status(400).json({ message: "Data Incomplete" });
         } else {
-          const user = data[0];
-          //Success: Return the all user details.
-          return res.status(200).json({
-            message: "finding one user is successful",
-            data: user,
-          });
+          // finding the user by id got from the frontend.
+          let data = await cabModel.findOne({ type: type });
+
+          // checking if the user exists or not.
+          if (!data) {
+            return res.status(404).json({ message: "Type data not found" });
+          } else {
+            const cab = data.cabs.find((cab) => cab._id?.toString() === _id);
+            if (!cab) {
+              return res.status(404).json({ message: "Cab not found" });
+            } else {
+              //Success: Return the all user details.
+              return res.status(200).json({
+                message: "finding one user is successful",
+                data: cab,
+              });
+            }
+          }
         }
       } else {
         //Error: Token not valid.
