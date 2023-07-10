@@ -90,6 +90,7 @@ export const verifyUserByToken = async (req: Request, res: Response) => {
         bearer.split(" ")[1],
         SecretKey
       ) as jwt.JwtPayload;
+      console.log(tokenVerify)
       if (tokenVerify) {
         // find out the user by id.
         // Success : Token id
