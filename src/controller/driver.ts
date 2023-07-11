@@ -753,3 +753,85 @@ export const updateDriverStatusController = async (
     return res.status(500).json({ message: "Server Error" });
   }
 };
+
+export const getPendingRequestsController = async (
+  req: Request,
+  res: Response
+) => {
+  try {
+    // access the header
+    const bearerHeader = req.headers.authorization;
+    if (bearerHeader !== undefined) {
+      const bearer: string = bearerHeader as string;
+      const tokenVerify = jwt.verify(
+        bearer.split(" ")[1],
+        SecretKey
+      ) as jwt.JwtPayload;
+      if (tokenVerify) {
+        const driver = await driverModel.findById({ _id: tokenVerify.id });
+        if (driver) {
+          // Success:
+          return res
+            .status(200)
+            .json({
+              message: "Get Drivers Pending is successful",
+              data: driver.pendingRequests,
+            });
+        } else {
+          //Error: if Header not found.
+          return res.status(404).json({ message: "Driver not found" });
+        }
+      } else {
+        //Error: if Header not found.
+        return res.status(404).json({ message: "Token not verified" });
+      }
+    } else {
+      //Error: Driver provided not found in database.
+      return res.status(400).json({ message: "Cannot find Driver" });
+    }
+  } catch (e) {
+    //Error: if something breaks in code.
+    return res.status(500).json({ message: "Server Error" });
+  }
+};
+
+export const getAcceptedRequestsController = async (
+  req: Request,
+  res: Response
+) => {
+  try {
+    // access the header
+    const bearerHeader = req.headers.authorization;
+    if (bearerHeader !== undefined) {
+      const bearer: string = bearerHeader as string;
+      const tokenVerify = jwt.verify(
+        bearer.split(" ")[1],
+        SecretKey
+      ) as jwt.JwtPayload;
+      if (tokenVerify) {
+        const driver = await driverModel.findById({ _id: tokenVerify.id });
+        if (driver) {
+          // Success:
+          return res
+            .status(200)
+            .json({
+              message: "Get Drivers Accepted is successful",
+              data: driver.acceptedRequests,
+            });
+        } else {
+          //Error: if Header not found.
+          return res.status(404).json({ message: "Driver not found" });
+        }
+      } else {
+        //Error: if Header not found.
+        return res.status(404).json({ message: "Token not verified" });
+      }
+    } else {
+      //Error: Driver provided not found in database.
+      return res.status(400).json({ message: "Cannot find Driver" });
+    }
+  } catch (e) {
+    //Error: if something breaks in code.
+    return res.status(500).json({ message: "Server Error" });
+  }
+};

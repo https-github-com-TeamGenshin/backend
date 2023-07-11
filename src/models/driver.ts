@@ -20,7 +20,22 @@ export interface Accept {
   start_date: Date;
 }
 
-// ---------------------------------------------------------- Accept Schema
+// ------------------------------------------------------- Accept Interface
+
+// ------------------------------------------------------- Pending Interface
+export interface Pending {
+  request_id: string;
+  user_id: string;
+  cab_id: string;
+  imageurl: string;
+  model_name: string;
+  model_registration_no: string;
+  location: Location;
+  kms: number | null;
+  time_required: number | null;
+  start_date: Date;
+}
+// ------------------------------------------------------- Pending Interface
 
 // ------------------------------------------------------------------------
 export interface Driver extends Document {
@@ -39,7 +54,7 @@ export interface Driver extends Document {
   rate_per_km: number;
   rate_per_hrs: number;
   acceptedRequests: Accept[];
-  pendingRequests: string[];
+  pendingRequests: Pending[];
 }
 // ------------------------------------------------------- Driver Interface
 
@@ -76,7 +91,6 @@ export const acceptSchema = new Schema<Accept>({
   model_registration_no: {
     type: String,
   },
-
   kms: {
     type: Number,
     default: null,
@@ -91,6 +105,43 @@ export const acceptSchema = new Schema<Accept>({
 });
 
 // ---------------------------------------------------------- Accept Schema
+
+// ---------------------------------------------------------- Pending Schema
+const pendingSchema = new Schema<Pending>({
+  request_id: {
+    type: String,
+  },
+  user_id: {
+    type: String,
+  },
+  cab_id: {
+    type: String,
+  },
+  location: {
+    type: locationSchema,
+  },
+  imageurl: {
+    type: String,
+  },
+  model_name: {
+    type: String,
+  },
+  model_registration_no: {
+    type: String,
+  },
+  kms: {
+    type: Number,
+    default: null,
+  },
+  time_required: {
+    type: Number,
+    default: null,
+  },
+  start_date: {
+    type: Date,
+  },
+});
+// ---------------------------------------------------------- Pending Schema
 
 // ------------------------------------------------------------------------
 const driverSchema = new Schema<Driver>({
@@ -141,7 +192,7 @@ const driverSchema = new Schema<Driver>({
     type: [acceptSchema],
   },
   pendingRequests: {
-    type: [String],
+    type: [pendingSchema],
   },
 });
 // --------------------------------------------------------- Driver Schema

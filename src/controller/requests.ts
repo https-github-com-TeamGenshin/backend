@@ -118,8 +118,8 @@ async function deleteRequestAfterCountdown(
           await user.save();
         }
         if (driver) {
-          driver.pendingRequests = driver.pendingRequests.filter((id) => {
-            return id !== requestId;
+          driver.pendingRequests = driver.pendingRequests.filter((data) => {
+            return data.request_id !== requestId;
           });
           await driver.save();
         }
@@ -155,8 +155,8 @@ async function deleteRequestAfterCountdown(
       if (request.request_status === "Pending") {
         user.pending_request = "";
         await user.save();
-        driver.pendingRequests = driver.pendingRequests.filter((id) => {
-          return id !== requestId;
+        driver.pendingRequests = driver.pendingRequests.filter((data) => {
+          return data.request_id !== requestId;
         });
         await driver.save();
         // Delete the request
@@ -204,12 +204,13 @@ export const createRequestController = async (req: Request, res: Response) => {
           model_no: string;
           total_amount: string;
           kms: number;
-          time_required: Date;
+          time_required: number;
           start_date: Date;
           model_name: string;
         } = req.body;
 
         type RequestData = {
+          cab: CabDetails | null;
           error: string;
           registrationNumber: string;
           user: (User & { _id: any }) | null;
@@ -226,6 +227,7 @@ export const createRequestController = async (req: Request, res: Response) => {
           if (!cabDetails || cabDetails.length === 0) {
             // Check if the cab exists
             return {
+              cab: null,
               error: "Error in cab details",
               registrationNumber: "",
               user: null,
@@ -236,6 +238,7 @@ export const createRequestController = async (req: Request, res: Response) => {
             const driver = await driverModel.findById({ _id: driver_id });
             if (!driver) {
               return {
+                cab: null,
                 error: "No such driver exists",
                 registrationNumber: "",
                 user: null,
@@ -256,6 +259,7 @@ export const createRequestController = async (req: Request, res: Response) => {
             const user = await userModel.findById({ _id: user_id });
             if (!user) {
               return {
+                cab: null,
                 error: "No such user exists",
                 registrationNumber: "",
                 user: null,
@@ -263,6 +267,7 @@ export const createRequestController = async (req: Request, res: Response) => {
               };
             } else if (user.pending_request.length !== 0) {
               return {
+                cab: null,
                 error: "User already has a pending request",
                 registrationNumber: "",
                 user: null,
@@ -287,6 +292,7 @@ export const createRequestController = async (req: Request, res: Response) => {
             cabDetails[0].no_of_seats = cabDetails[0].no_of_seats - 1;
 
             return {
+              cab: cabDetails[0],
               error: "No Errors",
               registrationNumber: registrationNumber,
               user: user,
@@ -312,10 +318,10 @@ export const createRequestController = async (req: Request, res: Response) => {
               .status(400)
               .json({ error: "Please fill all the fields" });
           } else {
-            const { registrationNumber, user, driver, error } =
+            const { cab, registrationNumber, user, driver, error } =
               await somenecessaryfields();
 
-            if (error !== "No Errors" || !driver || !user) {
+            if (!cab || error !== "No Errors" || !driver || !user) {
               return res.status(400).json({ message: error });
             }
             // Create the request with the retrieved registration number
@@ -335,7 +341,18 @@ export const createRequestController = async (req: Request, res: Response) => {
               model_name: model_name,
             });
 
-            driver.pendingRequests.push(request._id.toString());
+            driver.pendingRequests.push({
+              request_id: request._id.toString(),
+              user_id: user_id,
+              imageurl: cab.imageurl,
+              cab_id: cab_id,
+              model_registration_no: registrationNumber,
+              location: location,
+              kms: kms,
+              time_required: null,
+              start_date: start_date,
+              model_name: model_name,
+            });
 
             await driver.save();
 
@@ -376,10 +393,10 @@ export const createRequestController = async (req: Request, res: Response) => {
               .status(400)
               .json({ error: "Please fill all the fields" });
           } else {
-            const { registrationNumber, user, driver, error } =
+            const { cab, registrationNumber, user, driver, error } =
               await somenecessaryfields();
 
-            if (error !== "No Errors" || !driver || !user) {
+            if (!cab || error !== "No Errors" || !driver || !user) {
               return res.status(400).json({ message: error });
             }
 
@@ -399,7 +416,18 @@ export const createRequestController = async (req: Request, res: Response) => {
               model_name: model_name,
             });
 
-            driver.pendingRequests.push(request._id.toString());
+            driver.pendingRequests.push({
+              request_id: request._id.toString(),
+              user_id: user_id,
+              imageurl: cab.imageurl,
+              cab_id: cab_id,
+              model_registration_no: registrationNumber,
+              location: location,
+              kms: null,
+              time_required: time_required,
+              start_date: start_date,
+              model_name: model_name,
+            });
 
             await driver.save();
 
