@@ -37,7 +37,7 @@ export const loginDriverController = async (req: Request, res: Response) => {
             // creating the token
             const token = jwt.sign(
               {
-                id: driver._id,
+                id: driver._id.toString(),
                 username: driver.username,
                 email_id: driver.email_id,
                 mobile_no: driver.mobile_no,

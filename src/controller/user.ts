@@ -9,7 +9,6 @@ import driverModel from "../models/driver";
 // login user by username (email or mobile_no) and password.
 export const loginUserController = async (req: Request, res: Response) => {
   try {
-    console.log(req.body);
     if (!req.body.username) {
       return res.status(400).json({ message: "Email or Mobile no. not found" });
     } else if (!req.body.password) {
@@ -25,10 +24,8 @@ export const loginUserController = async (req: Request, res: Response) => {
       const user = await userModel.findOne({
         $or: [{ email_id }, { mobile_no }],
       });
-      console.log(user);
       // if user not found.
       if (user === null) {
-        console.log("Not Found");
         //Error: if user not found in database.
         return res.status(404).json({ message: "User does not exist" });
       } else {
@@ -37,14 +34,19 @@ export const loginUserController = async (req: Request, res: Response) => {
         bcrypt.compare(password, hashedPassword).then((results) => {
           if (results) {
             // creating the token
+            console.log(user._id.toString());
             const token = jwt.sign(
               {
-                id: user._id,
+                id: user._id.toString(),
                 username: user.name,
                 email_id: user.email_id,
                 mobile_no: user.mobile_no,
                 location: user.location,
-                role: "user",
+                pending_request: user.pending_request,
+                role:
+                  user._id.toString() === "64ad2bbdd73ea6b35065340e"
+                    ? "Admin"
+                    : "user",
               },
               SecretKey
             );
@@ -53,12 +55,16 @@ export const loginUserController = async (req: Request, res: Response) => {
               return res.status(200).send({
                 message: "Login Successful",
                 data: {
-                  id: user._id,
+                  id: user._id.toString(),
                   username: user.name,
                   email_id: user.email_id,
                   mobile_no: user.mobile_no,
                   location: user.location,
-                  role: "user",
+                  pending_request: user.pending_request,
+                  role:
+                    user._id.toString() === "64ad2bbdd73ea6b35065340e"
+                      ? "Admin"
+                      : "user",
                 },
                 token: token,
               });
@@ -81,35 +87,56 @@ export const loginUserController = async (req: Request, res: Response) => {
 
 // Verify User by token got from frontend.
 export const verifyUserByToken = async (req: Request, res: Response) => {
-  try {
-    // access the header
-    const bearerHeader = req.headers.authorization;
-    if (bearerHeader !== undefined) {
-      const bearer: string = bearerHeader as string;
-      const tokenVerify = jwt.verify(
-        bearer.split(" ")[1],
-        SecretKey
-      ) as jwt.JwtPayload;
-      console.log(tokenVerify)
-      if (tokenVerify) {
-        // find out the user by id.
+  // try {
+  // access the header
+  const bearerHeader = req.headers.authorization;
+  if (bearerHeader !== undefined) {
+    const bearer: string = bearerHeader as string;
+    const tokenVerify = jwt.verify(
+      bearer.split(" ")[1],
+      SecretKey
+    ) as jwt.JwtPayload;
+    if (tokenVerify) {
+      let driver;
+      // find out the user or driver by id.
+      const user = await userModel.findById({ _id: tokenVerify.id.toString() });
+      if (!user) {
+        driver = await driverModel.findById({
+          _id: tokenVerify.id.toString(),
+        });
+      }
+
+      console.log(user);
+
+      if (user) {
+        tokenVerify.pending_request = user.pending_request;
+        // Success : Token id
+        return res.status(200).send({
+          message: "Login by token Successful",
+          data: tokenVerify,
+        });
+      } else if (driver) {
         // Success : Token id
         return res.status(200).send({
           message: "Login by token Successful",
           data: tokenVerify,
         });
       } else {
-        //Error: if Header not found.
-        return res.status(404).json({ message: "Token not found" });
+        // Error data not found
+        return res.status(404).json({ message: "Data not found" });
       }
     } else {
       //Error: if Header not found.
       return res.status(404).json({ message: "Token not found" });
     }
-  } catch (e) {
-    // Error : verifying the token
-    return res.status(500).json({ message: "Problem in verifying the token" });
+  } else {
+    //Error: if Header not found.
+    return res.status(404).json({ message: "Token not found" });
   }
+  // } catch (e) {
+  //   // Error : verifying the token
+  //   return res.status(500).json({ message: "Problem in verifying the token" });
+  // }
 };
 
 // Create User in the Backend Controller.
@@ -344,7 +371,7 @@ export const getAllAcceptedRequestController = async (
   }
 };
 
-export const getOnAcceptedRequestController = async (
+export const getOneAcceptedRequestController = async (
   req: Request,
   res: Response
 ) => {
@@ -362,13 +389,18 @@ export const getOnAcceptedRequestController = async (
         // find all the users
         let users = await userModel.findById({ _id: tokenVerify.id });
         const data = users?.accepted_request.find((accepted) => {
-          return _id === accepted._id;
+          return _id === accepted._id?.toString();
         });
-        // Success : send all users
-        return res.json({
-          message: "Finding all users are successful!",
-          data: data,
-        });
+        if (data) {
+          // Success : send all users
+          return res.json({
+            message: "Finding all users are successful!",
+            data: data,
+          });
+        } else {
+          //Error: cannot find data
+          return res.status(404).json({ message: "Cannot Find the request" });
+        }
       } else {
         //Error: Token not valid.
         return res.status(404).json({ message: "Token not valid" });

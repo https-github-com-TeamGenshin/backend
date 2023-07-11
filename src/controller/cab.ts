@@ -15,7 +15,10 @@ export const createCab = async (req: Request, res: Response) => {
       bearer.split(" ")[1],
       SecretKey
     ) as jwt.JwtPayload;
-    if (tokenVerify.id === "64917e44fbe829eda5f5d7c2") {
+    if (
+      tokenVerify.id === "64ad2bbdd73ea6b35065340e" &&
+      tokenVerify.username === "Admin"
+    ) {
       const {
         registration_number,
         model_name,
@@ -64,11 +67,9 @@ export const createCab = async (req: Request, res: Response) => {
         const findCab = await cabModel.find(query);
         if (findCab.length !== 0) {
           // Error: Details already exist need to update the details.
-          return res
-            .status(400)
-            .json({
-              message: "Cab Details already exists, Update the details",
-            });
+          return res.status(400).json({
+            message: "Cab Details already exists, Update the details",
+          });
         } else {
           // find for the same type of vehicle exists in database or not.
           const findType = await cabModel.find({ type: type });
@@ -476,7 +477,11 @@ export const deleteTypeOfCabsController = async (
         bearer.split(" ")[1],
         SecretKey
       ) as jwt.JwtPayload;
-      if (tokenVerify.id === "64917e44fbe829eda5f5d7c2") {
+      if (
+        tokenVerify.id === "64ad2bbdd73ea6b35065340e" &&
+        tokenVerify.username === "Admin"
+      ) {
+        const { password }: { password: string } = req.body;
         // deleting the cab Type by filter.
         let data = await cabModel.findOne({ type: req.body.type });
 
@@ -519,8 +524,11 @@ export const deleteCabDetailsController = async (
         bearer.split(" ")[1],
         SecretKey
       ) as jwt.JwtPayload;
-      if (tokenVerify.id === "64917e44fbe829eda5f5d7c2") {
-        const { type, colour, model_no, fuel_type } = req.body;
+      if (
+        tokenVerify.id === "64ad2bbdd73ea6b35065340e" &&
+        tokenVerify.username === "Admin"
+      ) {
+        const { type, colour, model_no, fuel_type, password } = req.body;
         if (!type || !colour || !model_no || !fuel_type) {
           //Error: cab provided not found in database.
           return res.status(400).json({ message: "Data Incomplete" });
@@ -575,7 +583,10 @@ export const deleteOneCabDetailsController = async (
         bearer.split(" ")[1],
         SecretKey
       ) as jwt.JwtPayload;
-      if (tokenVerify.id === "64917e44fbe829eda5f5d7c2") {
+      if (
+        tokenVerify.id === "64ad2bbdd73ea6b35065340e" &&
+        tokenVerify.username === "Admin"
+      ) {
         const {
           type,
           colour,
@@ -584,6 +595,7 @@ export const deleteOneCabDetailsController = async (
           no_of_seats,
           fuel_type,
           registration_number,
+          password,
         } = req.body;
         if (
           !type ||
@@ -658,7 +670,10 @@ export const updateCabController = async (req: Request, res: Response) => {
         bearer.split(" ")[1],
         SecretKey
       ) as jwt.JwtPayload;
-      if (tokenVerify.id === "64917e44fbe829eda5f5d7c2") {
+      if (
+        tokenVerify.id === "64ad2bbdd73ea6b35065340e" &&
+        tokenVerify.username === "Admin"
+      ) {
         const {
           _id,
           registration_number,
@@ -672,6 +687,7 @@ export const updateCabController = async (req: Request, res: Response) => {
           hrs_rate,
           type,
           no_of_available,
+          password,
         } = req.body;
         if (
           !_id ||
@@ -742,8 +758,15 @@ export const getOneCabsController = async (req: Request, res: Response) => {
         bearer.split(" ")[1],
         SecretKey
       ) as jwt.JwtPayload;
-      if (tokenVerify.id === "64917e44fbe829eda5f5d7c2") {
-        const { _id, type }: { _id: string; type: string } = req.body;
+      if (
+        tokenVerify.id === "64ad2bbdd73ea6b35065340e" &&
+        tokenVerify.username === "Admin"
+      ) {
+        const {
+          _id,
+          type,
+          password,
+        }: { _id: string; type: string; password: string } = req.body;
         if (!_id || !type) {
           return res.status(400).json({ message: "Data Incomplete" });
         } else {

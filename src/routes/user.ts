@@ -8,6 +8,8 @@ import {
   findOneUserController,
   getAllUsersController,
   deleteUserController,
+  getAllAcceptedRequestController,
+  getOneAcceptedRequestController,
 } from "../controller/user";
 
 // All the data will be send in JSON format.
@@ -44,9 +46,20 @@ router.get("/getOneUserAllData", findOneUserController);
 router.get("/getAllUsers", getAllUsersController);
 
 // delete user-----------------------
-// pass (params) replace :id with the id
+// pass (headers) replace :id with the id
 // get data: deletedCount should be equals 1
 
 router.delete("/deleteUser", deleteUserController);
 
+// get all accepted request of user
+// pass (headers) replace :id with the id
+// get data: [All accepted request of user]
+
+router.get("/getAcceptedRequest", getAllAcceptedRequestController);
+
+// get One accepted request of user
+// pass (headers) and _id of the accepted request
+// get data: [One accepted request of user]
+
+router.post("/getOneAcceptedRequest", getOneAcceptedRequestController);
 export default router;

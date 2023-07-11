@@ -30,7 +30,7 @@ export interface Driver extends Document {
   mobile_no: string;
   gender: string;
   age: number;
-  imageURL: string;
+  imageurl: string;
   rating: number;
   experience_years: number;
   location: string;
@@ -100,7 +100,7 @@ const driverSchema = new Schema<Driver>({
   password: {
     type: String,
   },
-  imageURL: {
+  imageurl: {
     type: String,
   },
   email_id: {

@@ -8,7 +8,7 @@ export interface Requests extends Document {
   user_id: string;
   driver_id: string;
   driver_name: string;
-  imageURL: string;
+  imageurl: string;
   cab_id: string;
   type: string;
   model_name: string;
@@ -34,7 +34,7 @@ const requestsSchema = new Schema<Requests>({
   driver_name: {
     type: String,
   },
-  imageURL: {
+  imageurl: {
     type: String,
   },
   cab_id: {

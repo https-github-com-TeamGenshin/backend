@@ -8,7 +8,7 @@ export interface Accepted {
   driver_id: string;
   cab_id: string;
   driver_name: string;
-  imageURL: string;
+  imageurl: string;
   type: string;
   model_name: string;
   model_registration_no: string;
@@ -52,7 +52,7 @@ const acceptedSchema = new Schema<Accepted>({
   driver_name: {
     type: String,
   },
-  imageURL: {
+  imageurl: {
     type: String,
   },
   type: {
