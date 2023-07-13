@@ -193,6 +193,7 @@ export const createDriverController = async (req: Request, res: Response) => {
               vehicle_preferred: vehicle_preferred,
               rate_per_km: rate_per_km,
               rate_per_hrs: rate_per_hrs,
+              rating: 5,
               acceptedRequests: [],
               pendingRequests: [],
             })
@@ -230,7 +231,9 @@ export const findOneDriverController = async (req: Request, res: Response) => {
       ) as jwt.JwtPayload;
       if (tokenVerify) {
         // finding the driver by id got from the frontend.
-        let data = await driverModel.findById({ _id: tokenVerify.id });
+        let data = await driverModel
+          .findById({ _id: tokenVerify.id })
+          .select("-password -acceptedRequests -pendingRequests -rating");
 
         // checking if the driver exists or not.
         if (!data) {
@@ -273,6 +276,81 @@ export const getAllDriversController = async (req: Request, res: Response) => {
           message: "Finding all drivers are successful!",
           data: drivers,
         });
+      } else {
+        //Error: Token not valid.
+        return res.status(404).json({ message: "Token not valid" });
+      }
+    } else {
+      //Error: if Header not found.
+      return res.status(404).json({ message: "Token not found" });
+    }
+  } catch (e) {
+    //Error: if something breaks in code.
+    return res.status(500).json({ message: "Server Error" });
+  }
+};
+
+// Update one driver details
+export const updateDriverController = async (req: Request, res: Response) => {
+  try {
+    // access the header
+    const bearerHeader = req.headers.authorization;
+    if (bearerHeader !== undefined) {
+      const bearer: string = bearerHeader as string;
+      const tokenVerify = jwt.verify(
+        bearer.split(" ")[1],
+        SecretKey
+      ) as jwt.JwtPayload;
+      if (tokenVerify) {
+        const {
+          username,
+          gender,
+          age,
+          imageurl,
+          experience_years,
+          location,
+          rate_per_km,
+          rate_per_hrs,
+        } = req.body;
+
+        if (
+          !username &&
+          !gender &&
+          !age &&
+          !imageurl &&
+          !experience_years &&
+          !location &&
+          !rate_per_km &&
+          !rate_per_hrs
+        ) {
+          // Error: Data Incomplete
+          return res.status(400).json({ message: "Data Incomplete" });
+        } else {
+          // find the driver
+          const driver = await driverModel.findById({ _id: tokenVerify.id });
+          if (!driver) {
+            // Error: Driver not found
+            return res.status(404).json({ message: "Driver not found" });
+          } else {
+            driver.username = username || driver.username;
+            driver.gender = gender || driver.gender;
+            driver.age = age || driver.age;
+            driver.imageurl = imageurl || driver.imageurl;
+            driver.experience_years =
+              experience_years || driver.experience_years;
+            driver.location = location || driver.location;
+            driver.rate_per_km = rate_per_km || driver.rate_per_km;
+            driver.rate_per_hrs = rate_per_hrs || driver.rate_per_hrs;
+
+            await driver.save();
+
+            // Success: Driver updated successfully
+            return res.status(200).json({
+              message: "Driver updated successfully",
+              data: driver,
+            });
+          }
+        }
       } else {
         //Error: Token not valid.
         return res.status(404).json({ message: "Token not valid" });
@@ -676,10 +754,17 @@ export const deleteDriverController = async (req: Request, res: Response) => {
         bearer.split(" ")[1],
         SecretKey
       ) as jwt.JwtPayload;
-      if (tokenVerify) {
+      if (
+        tokenVerify.id === "64ad2bbdd73ea6b35065340e" &&
+        tokenVerify.username === "Admin"
+      ) {
+        const { _id } = req.body;
+        if (!_id) {
+          return res.status(400).json({ message: "Driver Id not found" });
+        }
         // deleting the Driver by filter.
         let data = await driverModel.findByIdAndDelete({
-          _id: tokenVerify.driver,
+          _id: _id,
         });
 
         // handling if Driver not deleted.
@@ -771,12 +856,10 @@ export const getPendingRequestsController = async (
         const driver = await driverModel.findById({ _id: tokenVerify.id });
         if (driver) {
           // Success:
-          return res
-            .status(200)
-            .json({
-              message: "Get Drivers Pending is successful",
-              data: driver.pendingRequests,
-            });
+          return res.status(200).json({
+            message: "Get Drivers Pending is successful",
+            data: driver.pendingRequests,
+          });
         } else {
           //Error: if Header not found.
           return res.status(404).json({ message: "Driver not found" });
@@ -812,12 +895,10 @@ export const getAcceptedRequestsController = async (
         const driver = await driverModel.findById({ _id: tokenVerify.id });
         if (driver) {
           // Success:
-          return res
-            .status(200)
-            .json({
-              message: "Get Drivers Accepted is successful",
-              data: driver.acceptedRequests,
-            });
+          return res.status(200).json({
+            message: "Get Drivers Accepted is successful",
+            data: driver.acceptedRequests,
+          });
         } else {
           //Error: if Header not found.
           return res.status(404).json({ message: "Driver not found" });

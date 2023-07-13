@@ -13,6 +13,7 @@ export interface Accept {
   cab_id: string;
   type: string;
   model_name: string;
+  imageurl: string;
   model_registration_no: string;
   location: Location;
   kms: number | null;
@@ -75,7 +76,9 @@ export const acceptSchema = new Schema<Accept>({
   user_id: {
     type: String,
   },
-
+  imageurl: {
+    type: String,
+  },
   cab_id: {
     type: String,
   },

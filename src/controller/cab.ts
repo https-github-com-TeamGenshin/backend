@@ -73,10 +73,10 @@ export const createCab = async (req: Request, res: Response) => {
         } else {
           // find for the same type of vehicle exists in database or not.
           const findType = await cabModel.find({ type: type });
-
+          let newCabDetails;
           if (findType.length !== 0) {
             // Type of car exist need to save the new Cab in database
-            const newCabDetails = {
+            newCabDetails = {
               registration_number: registration_number,
               imageurl: imageurl,
               model_name: model_name,
@@ -121,7 +121,7 @@ export const createCab = async (req: Request, res: Response) => {
             //Success: return the success status
             return res.status(200).json({
               message: "Cab is Saved Successfully",
-              data: savedCab,
+              data: newCabDetails,
             });
           }
         }
@@ -528,7 +528,7 @@ export const deleteCabDetailsController = async (
         tokenVerify.id === "64ad2bbdd73ea6b35065340e" &&
         tokenVerify.username === "Admin"
       ) {
-        const { type, colour, model_no, fuel_type, password } = req.body;
+        const { type, colour, model_no, fuel_type } = req.body;
         if (!type || !colour || !model_no || !fuel_type) {
           //Error: cab provided not found in database.
           return res.status(400).json({ message: "Data Incomplete" });
@@ -595,7 +595,6 @@ export const deleteOneCabDetailsController = async (
           no_of_seats,
           fuel_type,
           registration_number,
-          password,
         } = req.body;
         if (
           !type ||
@@ -687,8 +686,8 @@ export const updateCabController = async (req: Request, res: Response) => {
           hrs_rate,
           type,
           no_of_available,
-          password,
         } = req.body;
+
         if (
           !_id ||
           !registration_number ||
@@ -728,15 +727,20 @@ export const updateCabController = async (req: Request, res: Response) => {
 
             const savedCab = foundCab[0].save();
 
-            // Success: Data deleted successfully
+            // Success: Data Updated successfully
             return res
               .status(200)
-              .json({ message: "Cab details deleted", savedCab: savedCab });
+              .json({ message: "Cab details Updated", data: foundElement });
           } else {
             //Error: if Header not found.
             return res.status(404).json({ message: "Cab Type not found" });
           }
         }
+      } else {
+        //Error: if Header not found.
+        return res.status(404).json({
+          message: "Token not found",
+        });
       }
     } else {
       //Error: cab provided not found in database.
@@ -762,11 +766,7 @@ export const getOneCabsController = async (req: Request, res: Response) => {
         tokenVerify.id === "64ad2bbdd73ea6b35065340e" &&
         tokenVerify.username === "Admin"
       ) {
-        const {
-          _id,
-          type,
-          password,
-        }: { _id: string; type: string; password: string } = req.body;
+        const { _id, type }: { _id: string; type: string } = req.body;
         if (!_id || !type) {
           return res.status(400).json({ message: "Data Incomplete" });
         } else {

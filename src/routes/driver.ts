@@ -14,6 +14,7 @@ import {
   updateDriverStatusController,
   getPendingRequestsController,
   getAcceptedRequestsController,
+  updateDriverController,
 } from "../controller/driver";
 
 // All the data will be send in JSON format.
@@ -70,7 +71,7 @@ router.put("/getAllSearchedDrivers", getAllSearchedDriversController);
 // pass (params) replace :id with the id
 // get data: deletedCount should be equals 1
 
-router.delete("/deleteDriver", deleteDriverController);
+router.put("/deleteDriver", deleteDriverController);
 
 // Update status of driver
 // pass (headers) and status(boolean)
@@ -87,5 +88,10 @@ router.get("/pending", getPendingRequestsController);
 // pass (headers) only
 // get success message and data
 router.get("/accepted", getAcceptedRequestsController);
+
+// update driver Details
+// pass (headers) and all the details of driver
+// get success message and data
+router.put("/updateDriver", updateDriverController);
 
 export default router;

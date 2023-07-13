@@ -34,7 +34,6 @@ export const loginUserController = async (req: Request, res: Response) => {
         bcrypt.compare(password, hashedPassword).then((results) => {
           if (results) {
             // creating the token
-            console.log(user._id.toString());
             const token = jwt.sign(
               {
                 id: user._id.toString(),
@@ -105,8 +104,6 @@ export const verifyUserByToken = async (req: Request, res: Response) => {
           _id: tokenVerify.id.toString(),
         });
       }
-
-      console.log(user);
 
       if (user) {
         tokenVerify.pending_request = user.pending_request;

@@ -523,18 +523,24 @@ export const requestAcceptedByDriverController = async (
               // Check if the request is already accepted
               request.request_status = "Accepted";
               request = await request.save();
-              // Change the status of the driver
-              driver.pendingRequests = driver.pendingRequests.filter((id) => {
-                return id !== request_id;
-              });
-              driver.acceptedRequests.push(request);
-              await driver.save();
 
               // Change the status of the user
               user.pending_request = "";
               user.accepted_request.push(request);
               await user.save();
 
+              // Change the status of the driver
+              driver.pendingRequests = driver.pendingRequests.filter((data) => {
+                if (data.request_id === request_id && request !== null) {
+                  request.imageurl = data.imageurl;
+                }
+                return data.request_id !== request_id;
+              });
+
+              driver.acceptedRequests.push(request);
+              await driver.save();
+
+              request.imageurl = driver.imageurl;
               // Create a pusher trigger
               pusher
                 .trigger("Requests", request._id.toString(), request)
@@ -622,8 +628,8 @@ export const requestRejectedByDriverController = async (
               requests.createdAt = undefined;
 
               // Change the status of the driver
-              driver.pendingRequests = driver.pendingRequests.filter((id) => {
-                return id !== request_id;
+              driver.pendingRequests = driver.pendingRequests.filter((data) => {
+                return data.request_id !== request_id;
               });
               await driver.save();
 
