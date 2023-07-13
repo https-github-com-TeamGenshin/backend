@@ -583,6 +583,7 @@ export const deleteOneCabDetailsController = async (
         bearer.split(" ")[1],
         SecretKey
       ) as jwt.JwtPayload;
+      console.log(tokenVerify);
       if (
         tokenVerify.id === "64ad2bbdd73ea6b35065340e" &&
         tokenVerify.username === "Admin"
