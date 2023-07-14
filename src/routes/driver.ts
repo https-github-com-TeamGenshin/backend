@@ -82,12 +82,12 @@ router.post("/updateStatus", updateDriverStatusController);
 // get All Pending Requests
 // pass (headers) only
 // get success message and data
-router.get("/pending", getPendingRequestsController);
+router.post("/pending", getPendingRequestsController);
 
 // get All Accepted Requests
 // pass (headers) only
 // get success message and data
-router.get("/accepted", getAcceptedRequestsController);
+router.post("/accepted", getAcceptedRequestsController);
 
 // update driver Details
 // pass (headers) and all the details of driver
