@@ -13,6 +13,7 @@ export interface Accept {
   cab_id: string;
   type: string;
   model_name: string;
+  total_amount: number;
   imageurl: string;
   model_registration_no: string;
   location: Location;
@@ -30,6 +31,7 @@ export interface Pending {
   cab_id: string;
   imageurl: string;
   model_name: string;
+  total_amount: number;
   model_registration_no: string;
   location: Location;
   kms: number | null;
@@ -82,6 +84,9 @@ export const acceptSchema = new Schema<Accept>({
   cab_id: {
     type: String,
   },
+  total_amount: {
+    type: Number,
+  },
   location: {
     type: locationSchema,
   },
@@ -125,6 +130,9 @@ const pendingSchema = new Schema<Pending>({
   },
   imageurl: {
     type: String,
+  },
+  total_amount: {
+    type: Number,
   },
   model_name: {
     type: String,

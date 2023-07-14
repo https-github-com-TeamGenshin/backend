@@ -202,7 +202,7 @@ export const createRequestController = async (req: Request, res: Response) => {
           type: string;
           cab_id: string;
           model_no: string;
-          total_amount: string;
+          total_amount: number;
           kms: number;
           time_required: number;
           start_date: Date;
@@ -349,6 +349,7 @@ export const createRequestController = async (req: Request, res: Response) => {
               model_registration_no: registrationNumber,
               location: location,
               kms: kms,
+              total_amount: total_amount,
               time_required: null,
               start_date: start_date,
               model_name: model_name,
@@ -369,11 +370,19 @@ export const createRequestController = async (req: Request, res: Response) => {
             pusher
               .trigger("Requests", request._id.toString(), request)
               .then((e) => {
-                // Return the request
-                return res.status(201).json({
-                  message: "Successfully created the request",
-                  data: request,
-                });
+                pusher
+                  .trigger("driver", driver_id.toString(), request)
+                  .then((e) => {
+                    pusher
+                      .trigger("user", user_id.toString(), request)
+                      .then((e) => {
+                        // Success: Return the request
+                        return res.status(201).json({
+                          message: "Successfully created the request",
+                          data: request,
+                        });
+                      });
+                  });
               });
           }
         } else if (time_required) {
@@ -420,6 +429,7 @@ export const createRequestController = async (req: Request, res: Response) => {
               request_id: request._id.toString(),
               user_id: user_id,
               imageurl: cab.imageurl,
+              total_amount: total_amount,
               cab_id: cab_id,
               model_registration_no: registrationNumber,
               location: location,

@@ -344,9 +344,24 @@ export const getAllAcceptedRequestController = async (
       if (tokenVerify) {
         // find all the users
         let users = await userModel.findById({ _id: tokenVerify.id });
+
         const data = users?.accepted_request.map(
-          ({ driver_name, start_date, model_registration_no, _id }) => {
-            return { driver_name, start_date, model_registration_no, _id };
+          ({
+            model_name,
+            imageurl,
+            driver_name,
+            start_date,
+            model_registration_no,
+            _id,
+          }) => {
+            return {
+              model_name,
+              imageurl,
+              driver_name,
+              start_date,
+              model_registration_no,
+              _id,
+            };
           }
         );
         // Success : send all users

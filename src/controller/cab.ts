@@ -140,171 +140,172 @@ export const getAllFilteredCabsController = async (
   req: Request,
   res: Response
 ) => {
-  try {
-    // Access the header
-    const bearerHeader = req.headers.authorization;
-    if (bearerHeader !== undefined) {
-      const bearer: string = bearerHeader as string;
-      const tokenVerify = jwt.verify(bearer.split(" ")[1], SecretKey);
-      if (tokenVerify) {
-        let {
-          type,
-          location,
-          colour,
-          fuel_type,
-          hrs_rate,
-          kms_rate,
-        }: {
-          type: string;
-          location: string;
-          colour: string;
-          fuel_type: string;
-          hrs_rate: boolean;
-          kms_rate: boolean;
-        } = req.body;
+  // try {
+  // Access the header
+  const bearerHeader = req.headers.authorization;
+  if (bearerHeader !== undefined) {
+    const bearer: string = bearerHeader as string;
+    const tokenVerify = jwt.verify(bearer.split(" ")[1], SecretKey);
+    if (tokenVerify) {
+      let {
+        type,
+        location,
+        colour,
+        fuel_type,
+        hrs_rate,
+        kms_rate,
+      }: {
+        type: string;
+        location: string;
+        colour: string;
+        fuel_type: string;
+        hrs_rate: boolean;
+        kms_rate: boolean;
+      } = req.body;
 
-        let data: Cab | null = null;
+      let data: Cab | null = null;
 
-        if (type && location) {
-          // Find data based on the type and location
-          data = await cabModel.findOne({
-            type: type,
-            "cabs.location": location,
-          });
-        } else {
-          // Error: Data Incomplete (Type and Location)
-          return res
-            .status(400)
-            .json({ message: "Data Incomplete (Type and Location)" });
+      if (type && location) {
+        // Find data based on the type and location
+        data = await cabModel.findOne({
+          type: type,
+          "cabs.location": location,
+        });
+      } else {
+        // Error: Data Incomplete (Type and Location)
+        return res
+          .status(400)
+          .json({ message: "Data Incomplete (Type and Location)" });
+      }
+
+      if (!colour && !fuel_type) {
+        // Find data based on the type and location
+        let filteredCabs =
+          data?.cabs.filter(
+            (cabDetail) =>
+              cabDetail.location.trim().replace(" ", "") ===
+              location.trim().replace(" ", "")
+          ) ?? [];
+
+        data = {
+          ...data?.toObject(),
+          cabs: filteredCabs,
+        } as Cab;
+      }
+
+      if (colour && !fuel_type) {
+        // Find data based on the type,location and location
+        let filteredCabs = data?.cabs;
+
+        if (colour) {
+          filteredCabs = filteredCabs?.filter(
+            (cabDetail) =>
+              cabDetail.location.trim().replace(" ", "") ===
+                location.trim().replace(" ", "") &&
+              cabDetail.colour.trim().replace(" ", "") ===
+                colour.trim().replace(" ", "")
+          );
         }
 
-        if (!colour && !fuel_type) {
-          // Find data based on the type and location
-          let filteredCabs =
-            data?.cabs.filter(
-              (cabDetail) =>
-                cabDetail.location.trim().replace(" ", "") ===
-                location.trim().replace(" ", "")
-            ) ?? [];
+        data = {
+          ...data,
+          cabs: filteredCabs ?? [],
+        } as Cab;
+      }
 
-          data = {
-            ...data?.toObject(),
-            cabs: filteredCabs,
-          } as Cab;
-        }
+      if (fuel_type && !colour) {
+        let filteredCabs = data?.cabs;
 
-        if (colour && !fuel_type) {
-          // Find data based on the type,location and location
-          let filteredCabs = data?.cabs;
-
-          if (colour) {
-            filteredCabs = filteredCabs?.filter(
-              (cabDetail) =>
-                cabDetail.location.trim().replace(" ", "") ===
-                  location.trim().replace(" ", "") &&
-                cabDetail.colour.trim().replace(" ", "") ===
-                  colour.trim().replace(" ", "")
-            );
-          }
-
-          data = {
-            ...data,
-            cabs: filteredCabs ?? [],
-          } as Cab;
-        }
-
-        if (fuel_type && !colour) {
-          let filteredCabs = data?.cabs;
-
-          if (fuel_type) {
-            filteredCabs = filteredCabs?.filter(
-              (cabDetail) =>
-                cabDetail.location.trim().replace(" ", "") ===
-                  location.trim().replace(" ", "") &&
-                cabDetail.fuel_type.trim().replace(" ", "") ===
-                  fuel_type.trim().replace(" ", "")
-            );
-          }
-
-          data = {
-            ...data,
-            cabs: filteredCabs ?? [],
-          } as Cab;
-        }
-
-        if (fuel_type && colour) {
-          let filteredCabs = data?.cabs;
-
+        if (fuel_type) {
           filteredCabs = filteredCabs?.filter(
             (cabDetail) =>
               cabDetail.location.trim().replace(" ", "") ===
                 location.trim().replace(" ", "") &&
               cabDetail.fuel_type.trim().replace(" ", "") ===
-                fuel_type.trim().replace(" ", "") &&
-              cabDetail.colour.trim().replace(" ", "") ===
-                colour.trim().replace(" ", "")
+                fuel_type.trim().replace(" ", "")
           );
-
-          data = {
-            ...data,
-            cabs: filteredCabs ?? [],
-          } as Cab;
         }
 
-        if (data && hrs_rate && !kms_rate) {
-          // Sort the cabs by hrs_rate and kms_rate
-          data.cabs = data.cabs.sort((a: CabDetails, b: CabDetails) => {
-            return a.hrs_rate - b.hrs_rate;
-          });
-        } else if (data && kms_rate && !hrs_rate) {
-          data.cabs = data.cabs.sort((a: CabDetails, b: CabDetails) => {
-            return a.kms_rate - b.kms_rate;
-          });
-        } else if (data && kms_rate && hrs_rate) {
-          data.cabs = data.cabs.sort((a: CabDetails, b: CabDetails) => {
-            return a.hrs_rate + a.kms_rate - (b.hrs_rate + b.kms_rate);
-          });
-        }
+        data = {
+          ...data,
+          cabs: filteredCabs ?? [],
+        } as Cab;
+      }
 
-        // Checking if the user exists or not.
-        if (!data || data.cabs.length === 0) {
-          return res.status(404).json({ message: "Data not found" });
-        } else {
-          // Define the chunk size
-          const chunkSize = 8; // Number of items in each chunk
+      if (fuel_type && colour) {
+        let filteredCabs = data?.cabs;
 
-          // Calculate the total number of chunks
-          const totalChunks = Math.ceil(data.cabs.length / chunkSize);
+        filteredCabs = filteredCabs?.filter(
+          (cabDetail) =>
+            cabDetail.location.trim().replace(" ", "") ===
+              location.trim().replace(" ", "") &&
+            cabDetail.fuel_type.trim().replace(" ", "") ===
+              fuel_type.trim().replace(" ", "") &&
+            cabDetail.colour.trim().replace(" ", "") ===
+              colour.trim().replace(" ", "")
+        );
 
-          // Get the requested chunk number from the query parameter
-          const requestedChunk = parseInt(req.query.chunk as string) || 1;
+        data = {
+          ...data,
+          cabs: filteredCabs ?? [],
+        } as Cab;
+      }
 
-          // Calculate the start and end indices of the chunk
-          const startIndex = (requestedChunk - 1) * chunkSize;
-          const endIndex = requestedChunk * chunkSize;
+      if (data && hrs_rate && !kms_rate) {
+        // Sort the cabs by hrs_rate and kms_rate
+        data.cabs = data.cabs.sort((a: CabDetails, b: CabDetails) => {
+          return a.hrs_rate - b.hrs_rate;
+        });
+      } else if (data && kms_rate && !hrs_rate) {
+        data.cabs = data.cabs.sort((a: CabDetails, b: CabDetails) => {
+          return a.kms_rate - b.kms_rate;
+        });
+      } else if (data && kms_rate && hrs_rate) {
+        data.cabs = data.cabs.sort((a: CabDetails, b: CabDetails) => {
+          return a.hrs_rate + a.kms_rate - (b.hrs_rate + b.kms_rate);
+        });
+      }
 
-          // Slice the data array to get the desired chunk
-          const chunkData = data.cabs.slice(startIndex, endIndex);
-
-          // Send the chunk data as a response
-          return res.status(200).json({
-            message: "Get All Filtered Cabs is successful",
-            totalChunks: totalChunks,
-            chunkData: chunkData,
-          });
-        }
+      // Checking if the user exists or not.
+      if (!data || data.cabs.length === 0) {
+        return res.status(404).json({ message: "Data not found" });
       } else {
-        // Error: Invalid User or Driver
-        return res.status(400).json({ message: "Invalid User or Driver" });
+        // Define the chunk size
+        const chunkSize = 8; // Number of items in each chunk
+
+        // Calculate the total number of chunks
+        const totalChunks = Math.ceil(data.cabs.length / chunkSize);
+
+        // Get the requested chunk number from the query parameter
+        const requestedChunk = parseInt(req.query.chunk as string) || 1;
+
+        // Calculate the start and end indices of the chunk
+        const startIndex = (requestedChunk - 1) * chunkSize;
+        const endIndex = requestedChunk * chunkSize;
+
+        // Slice the data array to get the desired chunk
+        const chunkData = data.cabs.slice(startIndex, endIndex);
+
+      
+        // Send the chunk data as a response
+        return res.status(200).json({
+          message: "Get All Filtered Cabs is successful",
+          totalChunks: totalChunks,
+          chunkData: chunkData,
+        });
       }
     } else {
-      // Error: Error in finding the token
-      return res.status(400).json({ message: "Error in token" });
+      // Error: Invalid User or Driver
+      return res.status(400).json({ message: "Invalid User or Driver" });
     }
-  } catch (e) {
-    // Error: Something breaks in the code.
-    return res.status(500).json({ message: "Server Error" });
+  } else {
+    // Error: Error in finding the token
+    return res.status(400).json({ message: "Error in token" });
   }
+  // } catch (e) {
+  //   // Error: Something breaks in the code.
+  //   return res.status(500).json({ message: "Server Error" });
+  // }
 };
 
 export const getAllSearchedCabsController = async (
@@ -583,7 +584,6 @@ export const deleteOneCabDetailsController = async (
         bearer.split(" ")[1],
         SecretKey
       ) as jwt.JwtPayload;
-      console.log(tokenVerify);
       if (
         tokenVerify.id === "64ad2bbdd73ea6b35065340e" &&
         tokenVerify.username === "Admin"

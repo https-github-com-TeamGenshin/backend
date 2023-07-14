@@ -853,7 +853,8 @@ export const getPendingRequestsController = async (
         SecretKey
       ) as jwt.JwtPayload;
       if (tokenVerify) {
-        const driver = await driverModel.findById({ _id: tokenVerify.id });
+        const { _id } = req.body;
+        const driver = await driverModel.findById({ _id: _id });
         if (driver) {
           // Success:
           return res.status(200).json({
@@ -862,7 +863,7 @@ export const getPendingRequestsController = async (
           });
         } else {
           //Error: if Header not found.
-          return res.status(404).json({ message: "Driver not found" });
+          return res.status(404).json({ message: "Driver not fou" });
         }
       } else {
         //Error: if Header not found.
@@ -892,7 +893,8 @@ export const getAcceptedRequestsController = async (
         SecretKey
       ) as jwt.JwtPayload;
       if (tokenVerify) {
-        const driver = await driverModel.findById({ _id: tokenVerify.id });
+        const { _id } = req.body;
+        const driver = await driverModel.findById({ _id: _id });
         if (driver) {
           // Success:
           return res.status(200).json({
@@ -901,7 +903,7 @@ export const getAcceptedRequestsController = async (
           });
         } else {
           //Error: if Header not found.
-          return res.status(404).json({ message: "Driver not found" });
+          return res.status(404).json({ message: "Driver not fou" });
         }
       } else {
         //Error: if Header not found.
